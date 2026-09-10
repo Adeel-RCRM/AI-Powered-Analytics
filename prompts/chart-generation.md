@@ -9,7 +9,12 @@ using only fields that were actually discovered — never assumed schema.
    `prompts/requirements-intake.md` or `prompts/transcript-insights.md`,
    whichever flow is active.
 2. **Ask for confirmation** on which recommendation(s) to actually create,
-   unless the user already said "create all of them" or similar.
+   unless the user already said "create all of them" or similar. In the
+   same turn, **also ask whether to add a description to the card(s)**
+   being created (e.g. "Would you like a short description added to the
+   chart(s) being created?" — a plain yes/no, per CLAUDE.md "Chart
+   creation"). Default is **no description** — only add one if the user
+   says yes.
 3. Build the query:
    - **GUI/MBQL first, always.** Every chart must be built through Metabase's
      visual query builder (MBQL — load the `mbql` skill) by default. Only
@@ -27,6 +32,30 @@ using only fields that were actually discovered — never assumed schema.
      (one row per id per stage reached → filter to the earlier stage's ids →
      summarize again for the later stage among just those). This is usually
      buildable in the GUI as two chained summarize steps, no SQL needed.
+   - **Any average, ratio, rate, or other calculation built from more than
+     one raw aggregate must be split into separate, explicitly-named
+     steps** — see CLAUDE.md "Query transparency". Give each intermediate
+     aggregation/custom column a clear `name`/`display-name` (e.g. "Sum of
+     Deal Value", "Deal Count", then "Average Deal Value" as the final
+     division) so a teammate opening the notebook editor can read the
+     calculation directly from the query, step by step — never a single
+     unnamed expression, and never explained instead in the card's
+     `description` (that field is client-facing only — see CLAUDE.md).
+   - **A join never gets a custom/friendly alias** — see CLAUDE.md "Query
+     transparency" ("Join aliases"). Use the real, account-suffixed table
+     name being joined (e.g. `assign_job_candidate_662`) as the join's
+     alias, not a made-up display name — otherwise a teammate opening the
+     notebook editor later sees a label that doesn't match the schema and
+     can't tell which table it actually points to.
+   - **No filter or condition that changes the result may be buried where
+     the notebook GUI won't show it** — see CLAUDE.md "Query transparency".
+     A join's `conditions` holds only the join key(s), never an extra
+     restriction (e.g. `AND deal_stage = 'Won'`) — pull anything like that
+     out into its own visible Filter step instead. If the query is built on
+     a Model, that's fine per the Model guidance above, but the Model must
+     itself be clearly named/described (for teammates, not the client) and
+     — per step 8 below — its use must be named out loud when the chart is
+     reported back, not left implicit.
    - Use only tables/fields confirmed to exist during discovery.
    - **Validate before creating — native SQL needs *more* rigor than MBQL,
      not less**, since it bypasses the query builder's structural guardrails
@@ -62,6 +91,26 @@ using only fields that were actually discovered — never assumed schema.
      for a list-style finding (e.g., "which jobs"), KPI for a single number.
    - Keep it understandable to a business user: clear title, sensible axis
      labels, no unnecessary complexity.
+   - **Format every value with its actual unit** — see CLAUDE.md "Value
+     formatting" and `config/analysis-config.md`'s table of which field
+     shapes are monetary vs. percent vs. duration vs. a plain count. A
+     monetary field is never formatted with an assumed symbol: if this
+     account's currency isn't already recorded in
+     `references/metric-glossary.md`, ask the user once (e.g. "Which
+     currency should chart values use for this account — USD, EUR, GBP,
+     INR, or another?") before creating the card, then record the answer
+     there so later charts in this session and future sessions don't
+     re-ask.
+   - **Show the value on every point/bar/segment by default** — see
+     CLAUDE.md "Data labels": `"graph.show_values": true` for bar/line/
+     area/row/combo/funnel, `"pie.percent_visibility": "inside"` or
+     `"both"` for pie. Tables, pivots, and scalar/smartscalar/progress KPIs
+     already show the value directly — nothing to add there.
+   - **Combo chart with a mix of series types (e.g. a per-category
+     breakdown plus a total/summary line): set `series_settings.<key>.display`
+     explicitly for every series, not just the one that needs to differ from
+     Metabase's default** — see CLAUDE.md "Combo chart series display" for
+     why leaving any series unset is never safe here.
 5. Resolve the destination collection — see CLAUDE.md "Where created charts
    live": the account's sub-collection under collection 199 ("Data Team
    WIP"), creating it if it doesn't exist yet.
@@ -75,7 +124,8 @@ Include a meaningful `name`, the validated `dataset_query`, chosen `display`,
 minimal sensible `visualization_settings`, and `collection_id` set to the
 resolved account collection. Add filters from the recommendation's
 "Recommended Filters" as query filters or dashboard-ready parameters where
-appropriate.
+appropriate. Only include a `description` if the user opted in at step 2 —
+when they didn't, omit the field entirely rather than adding one anyway.
 
 7. **Verify** the created card:
 
@@ -87,7 +137,12 @@ Confirm it matches what was intended (query, display, name, collection).
 
 8. Report back to the user: card id, name, chart type, and how to find it in
    Metabase (collection it landed in). Do not claim success without having
-   run step 7.
+   run step 7. **If the chart is built on top of a Model**, name the Model
+   and summarize in one line what logic it applies (e.g. "built on Model
+   'Current Pipeline Stage', which ranks each candidate-job pair's stages
+   and keeps the furthest one reached") — see CLAUDE.md "Query
+   transparency". That dependency is never left for the user to notice on
+   their own.
 9. Append one `chart_created` entry to `logs/history.jsonl` for this card
    (see CLAUDE.md "History log" for the exact schema).
 
@@ -113,3 +168,10 @@ move to the next-ranked recommendation instead of forcing a broken chart.
   Archiving is only ever acceptable on a card this same operation just
   created (e.g. cleaning up after a failed validation), never on anything
   that already existed before this session touched it.
+- Never add a `description` to a card unless the user explicitly opted in
+  when asked at step 2 — no description is the default. When one is added,
+  it's client-facing (what the chart shows, why it matters) — never a
+  formula, calculation, or query-logic explanation. If the calculation
+  isn't clear on its own, that means the query's aggregation/custom-column
+  steps need clearer names, not a longer description (see CLAUDE.md "Query
+  transparency").

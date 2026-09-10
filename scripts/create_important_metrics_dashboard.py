@@ -43,19 +43,21 @@ import json
 import subprocess
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 TEMPLATE_PATH = Path(__file__).parent / "important_metrics_dashboard_template.json"
 LOG_PATH = Path(__file__).parent.parent / "logs" / "history.jsonl"
 PARENT_COLLECTION_ID = 199  # "Data Team WIP" - see CLAUDE.md
 DASHBOARD_NAME = "Important Metrics Dashboard"
 CHARTS_COLLECTION_NAME = "Important Metrics Dashboard Charts"
+IST = ZoneInfo("Asia/Kolkata")
 
 
 def log_event(event_type, **fields):
     """Append one entry to logs/history.jsonl - see CLAUDE.md "History log"."""
-    entry = {"timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "type": event_type, **fields}
+    entry = {"timestamp": datetime.now(IST).strftime("%Y-%m-%dT%H:%M:%S+05:30"), "type": event_type, **fields}
     with open(LOG_PATH, "a") as f:
         f.write(json.dumps(entry) + "\n")
 
@@ -193,6 +195,51 @@ def remap_query(node, resolved, field_entity_map, table_entity_map):
     return missing
 
 
+def rename_join_aliases(node, resolved, table_entity_map):
+    """Replace this template's human-readable join aliases (e.g. "Assign Job
+    Candidate") with the real, account-suffixed table name being joined
+    (e.g. "assign_job_candidate_662"). A friendly alias hides which literal
+    table a join actually points to when a teammate opens the card in
+    Metabase's notebook editor - the real table name doesn't (see CLAUDE.md
+    "Join aliases"). Must run before remap_query, which overwrites
+    source-table ids in place with this account's resolved ids - this
+    function still needs the template's original ids to look up
+    table_entity_map."""
+    alias_map = {}
+
+    def find_joins(n):
+        if isinstance(n, dict):
+            if "alias" in n and "conditions" in n and n.get("stages"):
+                old_table_id = n["stages"][0].get("source-table")
+                entity_name = table_entity_map.get(str(int(old_table_id))) if old_table_id is not None else None
+                entity = resolved.get(entity_name) if entity_name else None
+                if entity:
+                    alias_map[n["alias"]] = entity["table_name"]
+            for v in n.values():
+                find_joins(v)
+        elif isinstance(n, list):
+            for x in n:
+                find_joins(x)
+
+    find_joins(node)
+    if not alias_map:
+        return
+
+    def apply(n):
+        if isinstance(n, dict):
+            if "alias" in n and n["alias"] in alias_map:
+                n["alias"] = alias_map[n["alias"]]
+            if "join-alias" in n and n["join-alias"] in alias_map:
+                n["join-alias"] = alias_map[n["join-alias"]]
+            for v in n.values():
+                apply(v)
+        elif isinstance(n, list):
+            for x in n:
+                apply(x)
+
+    apply(node)
+
+
 def find_equality_literals(node, field_entity_map, acc):
     """Scan a dataset_query for ['=', {...}, ['field', {...}, id], <literal>]
     triples so we can verify the literal category value actually occurs in
@@ -234,6 +281,7 @@ def build_card_query(profile, card, resolved, field_entity_map, table_entity_map
     query = copy.deepcopy(card["dataset_query"])
     query["database"] = STARROCKS_DATABASE_ID
 
+    rename_join_aliases(query, resolved, table_entity_map)
     missing = remap_query(query, resolved, field_entity_map, table_entity_map)
     if missing:
         return None, f"fields/tables {missing} not found for this account"

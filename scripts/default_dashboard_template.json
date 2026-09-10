@@ -1265,7 +1265,13 @@
         "graph.x_axis.scale": "timeseries",
         "graph.metrics": [
           "% Placed Candidates"
-        ]
+        ],
+        "column_settings": {
+          "[\"name\",\"% Placed Candidates\"]": {
+            "number_style": "percent"
+          }
+        },
+        "graph.show_values": true
       },
       "field_names": {
         "1866372": "id",
@@ -1446,7 +1452,12 @@
           "created_on",
           "source"
         ],
-        "stackable.stack_type": "stacked"
+        "stackable.stack_type": "stacked",
+        "column_settings": {
+          "[\"name\",\"% Placed Candidates\"]": {
+            "number_style": "percent"
+          }
+        }
       },
       "field_names": {
         "1866396": "hiring_stage",
@@ -1690,11 +1701,7 @@
       },
       "visualization_settings": {
         "progress.goal": 1000000,
-        "column_settings": {
-          "[\"name\",\"sum\"]": {
-            "prefix": "$"
-          }
-        }
+        "column_settings": {}
       },
       "field_names": {
         "1876174": "deal_value"
@@ -1781,11 +1788,7 @@
         "graph.dimensions": [
           "company_name"
         ],
-        "column_settings": {
-          "[\"name\",\"sum\"]": {
-            "prefix": "$"
-          }
-        },
+        "column_settings": {},
         "graph.metrics": [
           "sum"
         ]
@@ -2567,9 +2570,6 @@
         "column_settings": {
           "[\"name\",\"close_date\"]": {
             "date_abbreviate": true
-          },
-          "[\"name\",\"sum\"]": {
-            "prefix": "$"
           }
         },
         "graph.metrics": [

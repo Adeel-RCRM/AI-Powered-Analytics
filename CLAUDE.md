@@ -309,7 +309,10 @@ native SQL question on its own is fine, just say why it isn't a Model.
 Only after recommendations are presented and explained:
 
 1. Ask the user to confirm which recommendation(s) to actually create in
-   Metabase (don't assume "all of them" unless they say so).
+   Metabase (don't assume "all of them" unless they say so). In the same
+   turn, also ask whether to add a description to the card(s) — a plain
+   yes/no. **No description is the default; never add one without the user
+   opting in.**
 2. Follow `prompts/chart-generation.md` — build the query from fields that
    were actually discovered, validate it (`mb query --dry-run`, plus an
    actual live run for native SQL — see chart-generation.md's validation
@@ -321,6 +324,80 @@ Only after recommendations are presented and explained:
    something with the wrong data.
 
 Never create more cards than the user actually confirmed.
+
+### Value formatting
+
+Every value a chart displays must carry its correct unit — a currency
+field shows a currency symbol, a ratio/rate shows a `%`, a duration shows
+its unit (days, seconds), a plain count stays a plain number. A raw
+unformatted number in a cell that actually represents money, a percentage,
+or some other unit is not an acceptable final chart — apply the formatting
+before creating the card, via Metabase's own column formatting
+(`visualization_settings.column_settings` — load the `visualization` skill
+for the exact keys, e.g. `number_style`, `currency`, `currency_style`,
+`prefix`/`suffix`). See `config/analysis-config.md`'s "Value formatting" for
+which field patterns count as monetary vs. a rate/ratio vs. a plain number.
+
+**Never assume which currency to use.** A dollar sign is not a safe
+default — the client could be billed in EUR, GBP, INR, or anything else.
+Before formatting any monetary field as currency, ask the user which
+currency applies to this account (e.g. "Which currency should chart values
+use for this account — USD, EUR, GBP, INR, or another?"), confirm once per
+account, and record the answer in `references/metric-glossary.md` (same
+"ask once per account" convention as the hiring-stage order) so it isn't
+re-asked on every chart. Percentage/ratio/duration formatting doesn't carry
+this ambiguity and doesn't need to be asked about — apply it directly.
+
+This applies to every flow that creates cards. `scripts/
+create_default_dashboard.py` has monetary cards (Total Cost of Calls, Deal
+Target Achieved, Total Deal Value per Company, Deal Value Closed Over Time)
+and accepts a `--currency` flag, prompting for it if omitted. `scripts/
+create_important_metrics_dashboard.py`'s current template has no monetary
+cards, so it has no such flag — if a future version of that template adds
+one, apply the same ask-once-per-account convention rather than hardcoding
+a symbol.
+
+### Data labels
+
+Every chart that plots discrete points, bars, or segments (bar, stacked bar,
+line, area, row, combo, funnel) must show its actual value on each
+point/bar by default — a shape with no number next to it isn't sufficient.
+Set `visualization_settings["graph.show_values"] = true` when building the
+chart. For pie charts, the equivalent is `pie.percent_visibility` set to
+`"inside"` or `"both"` (labels on or next to each slice), not `"off"`.
+
+Tables, pivot tables, and single-value displays (scalar, smartscalar,
+progress/KPI) already show every value directly in the cell/number itself —
+there's no separate point/bar to label, so no extra setting applies there.
+This applies to every flow that creates cards, including
+`scripts/create_default_dashboard.py` and
+`scripts/create_important_metrics_dashboard.py`, whose templates already
+follow this convention on every graph-type card except one bar chart that
+was missing it (fixed).
+
+### Combo chart series display
+
+A combo/stacked chart's series display type is **never safe to leave
+unset on some series and not others**. Metabase's built-in default (when a
+series has no explicit `series_settings` entry) is: the *first* series
+renders as a line, every other series renders as a bar — and "first" means
+whatever lands first in the chart's own internal series ordering, which is
+not necessarily the series you happened to configure.
+
+This bites specifically on the common "per-category breakdown as stacked
+bars, plus one total/summary line" pattern (e.g. a trend broken out by
+region, with a "Total" series overlaid as a line): if only the "Total"
+series gets `series_settings["Total"] = {"display": "line"}` and every
+region series is left unset, Metabase's default rule still applies
+underneath — some region can *also* default to a line instead of a bar,
+producing two lines where only one was intended. Setting a custom color on
+a series does not fix this; color and display type are separate settings.
+
+**The fix: set `display` explicitly in `series_settings` for every series
+on the chart**, not just the one(s) that need to differ from the default —
+e.g. every region series gets `{"display": "bar"}` and the total series
+gets `{"display": "line"}`. Never rely on "the other series will just
+inherit bar" — they don't, unless told to.
 
 ### Where created charts live
 
@@ -363,9 +440,10 @@ not Metabase content, so it isn't subject to hard constraint 7, but the same
 "never fabricate" rule applies: only log what actually happened, with real
 ids/timestamps.
 
-Get the timestamp with `date -u +"%Y-%m-%dT%H:%M:%SZ"` (real wall-clock
-time) — never invent one. Append with a simple `>>` (each event is one
-self-contained JSON line; don't rewrite existing lines).
+Get the timestamp with `TZ="Asia/Kolkata" date +"%Y-%m-%dT%H:%M:%S+05:30"`
+(real wall-clock time, in Indian Standard Time — never UTC, never invent one).
+Append with a simple `>>` (each event is one self-contained JSON line; don't
+rewrite existing lines).
 
 Append an entry at these points:
 
@@ -373,12 +451,12 @@ Append an entry at these points:
   or `prompts/transcript-insights.md`'s output step): one
   `recommendations_presented` entry.
   ```json
-  {"timestamp": "2026-08-18T23:41:00Z", "type": "recommendations_presented", "account": "662", "count_returned": 5, "recommendations": [{"rank": 1, "insight": "...", "chart_name": "...", "chart_type": "bar"}]}
+  {"timestamp": "2026-08-19T05:11:00+05:30", "type": "recommendations_presented", "account": "662", "count_returned": 5, "recommendations": [{"rank": 1, "insight": "...", "chart_name": "...", "chart_type": "bar"}]}
   ```
 - **After each card is created and verified** (`prompts/chart-generation.md`
   step 7): one `chart_created` entry per card.
   ```json
-  {"timestamp": "2026-08-18T23:45:00Z", "type": "chart_created", "account": "662", "recommendation_rank": 1, "card_id": 70801, "name": "...", "chart_type": "bar", "collection_id": 24521}
+  {"timestamp": "2026-08-19T05:15:00+05:30", "type": "chart_created", "account": "662", "recommendation_rank": 1, "card_id": 70801, "name": "...", "chart_type": "bar", "collection_id": 24521}
   ```
   Add `"source": "transcript"` to entries from the Transcript to Insights
   flow, or `"source": "requirements_intake"` to entries from the
@@ -390,14 +468,14 @@ Append an entry at these points:
   appends this itself — see the script): one `default_dashboard_created` (or
   `_skipped` / `_failed`) entry.
   ```json
-  {"timestamp": "2026-08-18T23:50:00Z", "type": "default_dashboard_created", "account": "662", "dashboard_id": 19175, "collection_id": 24521, "charts_collection_id": 24600, "cards_created": 31, "cards_skipped": [], "profile": "recruitcrm"}
+  {"timestamp": "2026-08-19T05:20:00+05:30", "type": "default_dashboard_created", "account": "662", "dashboard_id": 19175, "collection_id": 24521, "charts_collection_id": 24600, "cards_created": 31, "cards_skipped": [], "profile": "recruitcrm"}
   ```
 - **After an Important Metrics Dashboard run**
   (`scripts/create_important_metrics_dashboard.py` appends this itself — see
   the script): one `important_metrics_dashboard_created` (or `_skipped` /
   `_failed`) entry.
   ```json
-  {"timestamp": "2026-08-18T23:55:00Z", "type": "important_metrics_dashboard_created", "account": "662", "dashboard_id": 19180, "collection_id": 24521, "charts_collection_id": 24610, "cards_created": 18, "cards_skipped": [], "profile": "recruitcrm"}
+  {"timestamp": "2026-08-19T05:25:00+05:30", "type": "important_metrics_dashboard_created", "account": "662", "dashboard_id": 19180, "collection_id": 24521, "charts_collection_id": 24610, "cards_created": 18, "cards_skipped": [], "profile": "recruitcrm"}
   ```
 
 Any other genuinely useful event (e.g. an account that couldn't be located,
@@ -454,6 +532,35 @@ itself. The row *content* differs; only the `id` repeats.
 - **Notes / Tasks / Meetings**: a new row per association (e.g. one note
   linked to multiple records can appear more than once under the same
   `id`) — dedupe before counting.
+
+  **Association architecture is mid-migration — two mechanisms can coexist:**
+  - *Legacy (being removed):* separate FK columns —
+    `join_for_candidates_table`, `join_for_companies_table`,
+    `join_for_contacts_table`, `join_for_jobs_table`. Once an account is
+    migrated, these carry no reliable FK metadata — don't use them as the
+    join path, even if they still exist on the table.
+  - *New:* a polymorphic pair — `entity_type` (which entity table this row's
+    association points to, e.g. `candidate` / `company` / `contact` /
+    `job` / `deals`) + `join_for_entity_type` (that record's `id` within
+    whichever table `entity_type` names). **Always join on both together**
+    (`entity_type = 'candidate' AND join_for_entity_type =
+    candidates_<account>.id`) — ids are not unique across entity tables, so
+    joining on `join_for_entity_type` alone can silently match the wrong
+    table. In Metabase's GUI builder this needs a custom expression for the
+    `entity_type = '<value>'` side.
+  - **Don't conflate this with `related_to_type` / `related_to_name`**,
+    which is a *different*, item-level concept — the one record chosen as
+    the item's primary "Related To", identical on every row of the same
+    note/task/meeting no matter how many associations it has. `entity_type`
+    + `join_for_entity_type` is per-row and covers the primary association
+    *and* every secondary one. Grouping/counting by `related_to_type` alone
+    hides secondary associations entirely (see
+    `references/schema-map.md`'s worked example on account 662).
+  - Since this is an active migration, don't assume which columns exist or
+    which mechanism is authoritative for a given account — confirm via
+    normal discovery (`mb table fields`) rather than assuming every account
+    is in the same state. `references/schema-map.md` records what's been
+    confirmed per account.
 
 **Determining a candidate's current/furthest pipeline stage:** timestamps
 between consecutive stage changes are often only seconds apart, so
@@ -521,7 +628,131 @@ submitted-to-placed rate by company = (count of distinct ids per company
 that reached "Placed") / (count of distinct ids per company that reached
 "Submitted"), each side counted after first reducing to one row per id per
 stage — never a raw `COUNT(*)` ratio. Apply the same technique to any
-funnel-stage conversion metric, not just this example pair.
+funnel-stage conversion metric, not just this example pair. Each summarize
+step here also needs an explicit, human-readable name — see "Query
+transparency" below.
+
+## Query transparency
+
+Any calculation built from more than one raw aggregate — an average
+computed as sum ÷ count, a ratio, a rate, a percentage, a difference — must
+be visible as separate, clearly-named steps in the query itself, not
+collapsed into one opaque expression. Give every intermediate aggregation
+or custom column an explicit, human-readable `name`/`display-name` (e.g.
+"Sum of Deal Value", "Deal Count", then "Average Deal Value" as the final
+step dividing the two), so that anyone opening the card in Metabase's
+notebook editor sees exactly what's being computed, step by step. This is
+the same pattern `scripts/default_dashboard_template.json` already uses
+for its placement-rate cards: "Assigned Candidates", "Placed Candidates",
+then "% Placed Candidates" as the ratio of the two — each one a separate,
+named, inspectable step, not a single hidden calculation. A generic/default
+name (an unlabeled `sum`, `count`, or "Custom Expression") is not
+acceptable once more than one aggregate feeds into a further calculation —
+a teammate opening the notebook should never have to guess what an
+intermediate value represents.
+
+**Never put this explanation in the card's `description` field.** A
+description isn't even added by default — see "Chart creation" above, it's
+only added if the user opts in when asked. When one is added, it's
+client-facing: what the chart shows and why it matters, nothing about how
+it's computed. If a teammate needs to understand the calculation, they open
+the query in Metabase's editor, where the named steps above make it
+self-explanatory — that's what makes the query transparent, not prose. Do
+not add "formula", "logic", or "calculation" language to a card's
+description to compensate for an unclear query; fix the query's step
+naming instead.
+
+When native SQL is genuinely necessary (per "GUI (MBQL) first" above), the
+same transparency requirement applies via column aliases: `SUM(deal_value)
+AS total_deal_value`, `COUNT(DISTINCT id) AS deal_count`, `... AS
+avg_deal_value`, etc. — never an unaliased expression a reader has to
+reverse-engineer from context. A short SQL comment inside the query text
+itself (not the card description) is fine for a genuinely non-obvious step
+(e.g. the stage-ordinal `CASE` ranking).
+
+**Join aliases: never a custom/friendly label — use the real table name.**
+When an MBQL query joins another table, don't give the join a made-up
+display name (e.g. `"Assign Job Candidate"`) — set its alias to the actual
+underlying table being joined (e.g. `assign_job_candidate_<account>`), the
+same name Metabase's own notebook editor would show if you built the join
+through the GUI without renaming it. A custom alias hides which literal
+table is actually joined from anyone who opens the card's notebook editor
+later — they see a label that doesn't match anything in the schema and
+can't tell what it maps to. This was a real bug in
+`scripts/create_important_metrics_dashboard.py`'s ratio cards (fixed — see
+`rename_join_aliases`): the template's joins used a friendly alias that
+never got reconciled with the account's real table name, so the notebook
+editor showed a name unrelated to the actual joined table.
+
+**A second, separate join-labeling bug: an unaliased base-table field whose
+name collides with a same-named column on the joined table gets
+mislabeled in the notebook editor.** A join condition's base-table side
+normally carries no `join-alias` tag (it doesn't need one — it's implicitly
+the base table). If that field happens to be named something generic that
+*also* exists as a column on the joined table (the classic case: both
+tables have their own `id` column, and the join condition compares
+`BaseTable.id` against `JoinedTable.some_fk_column`), Metabase's notebook
+editor can mislabel the condition — showing both sides as if they came from
+the joined table (e.g. `Assign Job Candidate = Assign Job Candidate`)
+instead of the true `Jobs = Assign Job Candidate`. This does **not** happen
+when the base-table side has a distinctive name that doesn't collide with
+anything on the joined table.
+
+This is purely a **notebook display bug** — the query's actual field ids
+are correct and the numbers it produces are unaffected. But it's still a
+real problem for the exact reason this whole "Query transparency" section
+exists: a teammate reading the notebook can no longer tell which table a
+join condition's base-table side actually comes from.
+
+**Known instance in this repo:** `scripts/important_metrics_dashboard_template.json`'s
+three Jobs-based ratio cards — `assigned_per_job`, `job_per_placement`,
+`applied_per_job` — all have this. Base table is Jobs (whose join-condition
+field is the generic `id`), joined table is Assignments/"Assign Job
+Candidate" (which also has its own `id` column, distinct from the
+`join_for_jobs_table` FK actually used in the join). **The general fix of
+swapping which table is the base table (as used safely elsewhere, e.g.
+`avg_time_to_fill_per_job`) is NOT safe to apply here without live
+verification**: these three cards specifically left-join *from* Jobs so
+that a job with zero assignment rows still gets counted in the "distinct
+Jobs" denominator used for the ratio. Swapping to left-join *from*
+Assignments would silently drop any job with no assignments out of the
+result set entirely, undercounting that denominator — trading a cosmetic
+label bug for a real numeric one. Don't apply the base-table swap to a
+one-to-many join like this without confirming (via a live `mb query` run)
+that the swap doesn't change which rows survive the join.
+
+**No filter or condition that changes the result may live somewhere other
+than a visible Filter/Summarize step.** Two specific ways this goes wrong:
+
+- **A restriction folded into a join's `conditions` beyond the actual join
+  key(s).** A join's condition list should contain only the equality that
+  links the two tables (`entity_type = 'candidate' AND join_for_entity_type
+  = candidates.id`, an FK match, etc.) — never an *additional* clause that
+  quietly excludes/includes rows (e.g. `AND deal_stage = 'Won'` tacked onto
+  a join). That kind of restriction belongs in its own Filter step, where
+  it's visible at a glance; folded into a join, a teammate reviewing the
+  notebook's Filters wouldn't see it at all — they'd have to know to open
+  the join's own condition editor to find it. (Checked: no join in either
+  dashboard template currently does this — all have exactly the join-key
+  equality and nothing else. Keep it that way going forward.)
+- **Logic that lives inside a Model or native-SQL question a chart is built
+  on top of.** Per "Chart creation" above, genuinely complex logic (the
+  stage-ordinal `CASE` ranking, window functions) gets pushed into a Model
+  so the chart itself stays GUI/MBQL. That's correct, but it creates a real
+  blind spot: a chart built on top of a Model shows "based on Model X" in
+  its own notebook — not the Model's internal filtering/ranking logic. That
+  logic still affects every number the chart produces, so it can't just be
+  left implicit:
+  - The Model itself must carry a clear name and a description of exactly
+    what it computes and any filtering it applies internally — this is
+    engineering documentation for teammates, not the client-facing
+    restriction on card descriptions above (a Model isn't shown to clients
+    the way a dashboard card is).
+  - Whenever a chart is created on top of a Model, say so explicitly when
+    reporting it back to the user (`prompts/chart-generation.md` step 8) —
+    name the Model and summarize in one line what logic it encodes. The
+    dependency is never left for someone to discover only by noticing the
+    data source isn't a plain table.
 
 ## Error handling — exact wording
 
