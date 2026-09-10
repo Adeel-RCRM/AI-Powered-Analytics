@@ -60,9 +60,13 @@ Claude will then:
 1. Verify Metabase CLI configuration.
 2. Ask which kind of work you want: **Requirements Intake** (you state chart
    requirements directly — a list, a pasted client doc — and Claude grounds
-   each in that account's real data; this project's primary flow), or
+   each in that account's real data; this project's primary flow),
    **Transcript to Insights** (turn a pasted client meeting transcript into
-   chart recommendations grounded in that account's real data).
+   chart recommendations grounded in that account's real data), **Default
+   Dashboard** (the standardized onboarding dashboard every account gets,
+   built automatically), or **Important Metrics Dashboard** (the
+   standardized hiring-efficiency dashboard every account gets, also built
+   automatically).
 
 The **Requirements Intake** flow asks for the account number and your chart
 requirements directly, checks known patterns/reference material first and
@@ -75,12 +79,23 @@ pasted transcript, extracts analytics requirements from it, grounds each in
 the account's real data, and presents a numbered list of buildable charts
 before asking which to create.
 
-Every discovery/resolution step in both flows works from schema metadata
+The **Default Dashboard** flow instead just asks for the account number and
+runs `scripts/create_default_dashboard.py`, which discovers the account's
+data and builds the standard chart set end-to-end.
+
+The **Important Metrics Dashboard** flow works the same way: asks for the
+account number and runs `scripts/create_important_metrics_dashboard.py`,
+which discovers the account's data and builds its own standard chart set
+(jobs & hiring efficiency, ratios, trends, candidate diversity) end-to-end.
+
+Every discovery/resolution step in the two conversational flows
+(Requirements Intake, Transcript to Insights) works from schema metadata
 (table/column names, types) only — it never samples, queries, or displays
 the account's actual row data. The one narrow, documented exception is
-described in "Where charts touch real data" below.
+described in "Where charts touch real data" below. The two dashboard scripts
+follow the same metadata-only discovery internally.
 
-See `docs/workflow.md` for both flows written out in more detail, and
+See `docs/workflow.md` for all four flows written out in more detail, and
 `CLAUDE.md` for the operating instructions Claude itself follows.
 
 ## Project structure
@@ -92,8 +107,8 @@ README.md                  This file
 .gitignore
 config/analysis-config.md  Tunable defaults (data-quality thresholds, chart-type defaults)
 prompts/
-  discovery.md              Map the account's actual data (metadata only, both flows)
-  chart-generation.md        Create + verify charts in Metabase (both flows)
+  discovery.md              Map the account's actual data (metadata only, both conversational flows)
+  chart-generation.md        Create + verify charts in Metabase (both conversational flows)
   transcript-insights.md     Transcript to Insights: transcript -> grounded chart candidates
   requirements-intake.md     Requirements Intake: stated requirements -> grounded chart candidates
   infeasible-requirement.md  How to handle a requirement the account's real data can't support
@@ -101,12 +116,16 @@ prompts/
                               canonical patterns) that Requirements Intake checks first once built
 docs/
   architecture.md            System shape and rationale
-  workflow.md                Human-readable walkthrough of both flows
+  workflow.md                Human-readable walkthrough of all four flows
 references/
   schema-map.md              Structural (metadata-only) map of the 12 core Recruit CRM tables
   metric-glossary.md         Business-term definitions confirmed by the user, per account
 scripts/
-  mb-login.sh                          One-time helper: .env -> mb auth login
+  mb-login.sh                                    One-time helper: .env -> mb auth login
+  create_default_dashboard.py                    Automates the Default Dashboard flow end-to-end
+  default_dashboard_template.json                Fixed chart set the Default Dashboard flow replicates
+  create_important_metrics_dashboard.py          Automates the Important Metrics Dashboard flow end-to-end
+  important_metrics_dashboard_template.json      Fixed chart set the Important Metrics Dashboard flow replicates
 logs/
   history.jsonl              Local-only, git-ignored audit trail (see CLAUDE.md "History log")
 ```
@@ -164,10 +183,12 @@ Claude will only invoke one if the task genuinely calls for it:
 
 - No web pages of this project's own — recommendations and explanations are
   delivered as terminal/chat output; the only dashboard/card content that
-  exists is what gets created in Metabase itself (confirmed Requirements
-  Intake / Transcript to Insights charts).
-- Neither flow assembles a dashboard — both create individual cards only;
-  dashboard assembly is future scope, not built yet.
+  exists is what gets created in Metabase itself (Default Dashboard flow,
+  Important Metrics Dashboard flow, or confirmed Requirements Intake /
+  Transcript to Insights charts).
+- Requirements Intake and Transcript to Insights create individual cards
+  only — dashboard assembly for those two flows is future scope, not built
+  yet.
 - Chart creation depends on what the installed `mb` CLI version actually
   supports; if a capability isn't available, Claude will say so rather than
   working around it with a different interface.

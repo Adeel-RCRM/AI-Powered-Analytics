@@ -60,7 +60,7 @@ status`) directly in the main conversation. If it fails, stop and tell the
 user exactly what to fix. Do not proceed to Step 0.5 on broken config.
 
 **Step 0.5 — Ask which kind of work to do.**
-Once configuration is verified, ask via `AskUserQuestion` (2 discrete
+Once configuration is verified, ask via `AskUserQuestion` (4 discrete
 options — this is what that tool is for, unlike Step 2's entity list below):
 
 - **Requirements Intake** — the user states chart requirements directly
@@ -70,6 +70,17 @@ options — this is what that tool is for, unlike Step 2's entity list below):
 - **Transcript to Insights** — turn a client meeting transcript into chart
   recommendations grounded in that account's real data: skip straight to
   "Transcript to Insights flow" below.
+- **Default Dashboard** — the standardized onboarding dashboard every
+  Advanced Analytics client gets, automated end-to-end: skip straight to
+  "Default Dashboard flow" below (no entity choice, no recommendation count —
+  it's the same fixed set of charts for every account, adapted to that
+  account's actual data).
+- **Important Metrics Dashboard** — the standardized hiring-efficiency
+  dashboard (jobs, ratios, trends, candidate diversity) every Advanced
+  Analytics client gets, automated end-to-end: skip straight to "Important
+  Metrics Dashboard flow" below (no entity choice, no recommendation count —
+  same fixed set of charts for every account, adapted to that account's
+  actual data).
 
 ### Transcript to Insights flow
 
@@ -131,6 +142,70 @@ summary:
    below — individual cards only, **not** a dashboard.
 7. Log per "History log" below.
 
+### Default Dashboard flow
+
+1. Ask exactly: "Which Recruit CRM account would you like to build the
+   default dashboard for? Please provide the account number."
+2. Run `python3 scripts/create_default_dashboard.py --profile <name>
+   --account <account_number>` (the profile confirmed in Step 0) directly in
+   the main conversation — this is a single Bash invocation, not a
+   subagent/fork; the script's own progress output is fine to show as-is.
+3. Report back what the script reports: dashboard id/link, cards created vs.
+   skipped (and why), and the collections it landed in — the dashboard
+   directly in the account's collection, its cards in a nested "Default
+   Dashboard Charts" sub-collection (see
+   `scripts/create_default_dashboard.py`'s docstring for what it does and
+   its own guardrails: Starrocks-only, additive-only per hard constraint 7,
+   history logging).
+4. If the script fails or reports a skip (e.g. account not found, dashboard
+   already exists), relay that plainly — don't retry with guesses or force
+   anything.
+
+### Important Metrics Dashboard flow
+
+1. Ask exactly: "Which Recruit CRM account would you like to build the
+   important metrics dashboard for? Please provide the account number."
+2. Run `python3 scripts/create_important_metrics_dashboard.py --profile
+   <name> --account <account_number>` (the profile confirmed in Step 0)
+   directly in the main conversation — this is a single Bash invocation, not
+   a subagent/fork; the script's own progress output is fine to show as-is.
+3. Report back what the script reports: dashboard id/link, cards created vs.
+   skipped (and why), and the collections it landed in — the dashboard
+   directly in the account's collection, its cards in a nested "Important
+   Metrics Dashboard Charts" sub-collection (see
+   `scripts/create_important_metrics_dashboard.py`'s docstring for what it
+   does and its own guardrails: Starrocks-only, additive-only per hard
+   constraint 7, history logging).
+4. If the script fails or reports a skip (e.g. account not found, dashboard
+   already exists), relay that plainly — don't retry with guesses or force
+   anything.
+
+## Configuration verification
+
+Before any Metabase operation:
+
+```bash
+mb auth list --json
+```
+
+- If `data` is empty → tell the user: "Metabase CLI could not be accessed. No
+  authentication profile is configured. Please run `mb auth login` (see
+  README.md) and tell me which profile name to use." Stop.
+- If one or more profiles exist and it's unambiguous which to use (one
+  profile, or a profile name matching `.env`'s `MB_PROFILE`), use it. If
+  ambiguous, ask the user which profile via `AskUserQuestion`.
+- Run `mb auth status --profile <name> --json`. If `authenticated` is false or
+  `status` isn't `ok`, tell the user: "Metabase authentication could not be
+  verified for profile '<name>' (status: <status>). Please check the
+  Metabase URL/API key with `mb auth login --profile <name>`." Stop.
+- Only once a profile is confirmed authenticated, proceed — and pass
+  `--profile <name>` on every subsequent `mb` command for the rest of the
+  session.
+
+Never read a raw API key out of `.env` and pass it around manually — `.env`
+exists so a human can run `scripts/mb-login.sh` once; after that, `mb`'s own
+profile store is the source of truth.
+
 ## Locating the account's data
 
 Recruit CRM data lives per-account as suffixed tables (e.g.
@@ -165,6 +240,19 @@ in this account's data. Do not assume a table or field exists; verify with
 For each entity worth analyzing, understand record counts, key dimensions
 (status, stage, owner/recruiter, dates), key measures, and relationships
 (foreign keys) before treating anything as a metric candidate.
+
+**When the user, a transcript, or any other source material explicitly
+states which Recruit CRM field a business term maps to, that stated mapping
+is authoritative — never substitute a different, same-sounding field chosen
+by name or type matching instead.** For example, if a client says on a call
+"our Minimum Annual Package is what you call Budget Allocated," use
+`budget_allocated`, not a differently-named field like `annual_salary_min`
+that merely *sounds* like a semantic match or happens to have cleaner/more
+complete data. Before picking a field for a business term, re-read the
+source material for an explicit statement of the mapping; only fall back to
+inferring one from field names/types/data completeness when the source
+genuinely doesn't say. If multiple fields are still plausible after that,
+ask rather than guess.
 
 ## Data quality gate
 
@@ -253,9 +341,15 @@ inside a sub-collection named for the account number being analyzed.
    `mb collection create --body '{"name":"<account_number>","parent_id":199}'`.
 4. Never create a card outside this account-scoped collection.
 
-This convention applies to every flow in this project — Transcript to
-Insights and Requirements Intake both create individual cards directly in
-the account's collection (neither flow assembles a dashboard).
+This is the convention for Transcript to Insights and Requirements Intake —
+both create individual cards directly in the account's collection (neither
+flow assembles a dashboard). The Default Dashboard and Important Metrics
+Dashboard flows instead nest their cards one level deeper, each in their own
+sub-collection under the account's collection — "Default Dashboard Charts"
+(see "Default Dashboard flow" above and `scripts/create_default_dashboard.py`)
+or "Important Metrics Dashboard Charts" (see "Important Metrics Dashboard
+flow" above and `scripts/create_important_metrics_dashboard.py`) — each
+flow's dashboard still sits directly in the account's collection.
 
 ## History log
 
@@ -275,6 +369,12 @@ self-contained JSON line; don't rewrite existing lines).
 
 Append an entry at these points:
 
+- **After presenting recommendations** (end of `prompts/requirements-intake.md`'s
+  or `prompts/transcript-insights.md`'s output step): one
+  `recommendations_presented` entry.
+  ```json
+  {"timestamp": "2026-08-18T23:41:00Z", "type": "recommendations_presented", "account": "662", "count_returned": 5, "recommendations": [{"rank": 1, "insight": "...", "chart_name": "...", "chart_type": "bar"}]}
+  ```
 - **After each card is created and verified** (`prompts/chart-generation.md`
   step 7): one `chart_created` entry per card.
   ```json
@@ -284,11 +384,25 @@ Append an entry at these points:
   flow, or `"source": "requirements_intake"` to entries from the
   Requirements Intake flow (and use `"requirement"` in place of `"insight"`
   in the `recommendations` array for that flow) so the two are
-  distinguishable in `logs/history.jsonl`.
+  distinguishable in `logs/history.jsonl`. Both event types above take this
+  same `source` tagging.
+- **After a Default Dashboard run** (`scripts/create_default_dashboard.py`
+  appends this itself — see the script): one `default_dashboard_created` (or
+  `_skipped` / `_failed`) entry.
+  ```json
+  {"timestamp": "2026-08-18T23:50:00Z", "type": "default_dashboard_created", "account": "662", "dashboard_id": 19175, "collection_id": 24521, "charts_collection_id": 24600, "cards_created": 31, "cards_skipped": [], "profile": "recruitcrm"}
+  ```
+- **After an Important Metrics Dashboard run**
+  (`scripts/create_important_metrics_dashboard.py` appends this itself — see
+  the script): one `important_metrics_dashboard_created` (or `_skipped` /
+  `_failed`) entry.
+  ```json
+  {"timestamp": "2026-08-18T23:55:00Z", "type": "important_metrics_dashboard_created", "account": "662", "dashboard_id": 19180, "collection_id": 24521, "charts_collection_id": 24610, "cards_created": 18, "cards_skipped": [], "profile": "recruitcrm"}
+  ```
 
 Any other genuinely useful event (e.g. an account that couldn't be located,
 an analysis that had to be skipped for insufficient data) is fine to log too
-with a descriptive `type` — `chart_created` isn't an exhaustive list, just
+with a descriptive `type` — the events above aren't an exhaustive list, just
 the required minimum.
 
 ## Recruit CRM / Metabase data model — standing knowledge

@@ -25,7 +25,11 @@ For each requirement, in this order:
 2. **Check reference material next.** If `references/schema-map.md` and/or
    `references/metric-glossary.md` exist, use them to resolve table/column
    choices and business-term definitions (e.g. "active candidate," "placed,"
-   "assigned," "this month") before falling back to live inspection.
+   "assigned," "this month") before falling back to live inspection. **If the
+   user's own requirements text explicitly states which Recruit CRM field a
+   term maps to, that stated mapping is authoritative** (per CLAUDE.md "Data
+   discovery") — never substitute a different, same-sounding field chosen by
+   name/type matching instead.
 3. **Fall back to live discovery** exactly as `prompts/discovery.md`
    describes whenever no reference file covers what's needed —
    `references/schema-map.md` and `references/metric-glossary.md` exist
