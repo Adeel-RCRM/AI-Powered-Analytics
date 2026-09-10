@@ -292,10 +292,10 @@ card happens to already encode, no matter how plausible it looks.
 **GUI (MBQL) first, always.** Every chart is built through Metabase's visual
 query builder (MBQL) by default. Only fall back to native SQL when the
 required logic genuinely cannot be expressed in MBQL (e.g. the stage-ordinal
-`CASE` ranking used to determine a candidate's current pipeline stage,
-window functions, or similarly complex computations) — and say explicitly
-why MBQL wasn't sufficient when this happens. See `prompts/chart-generation.md`
-for the full sequence.
+`CASE` ranking used to determine a candidate's maximum/farthest pipeline
+stage, window functions, or similarly complex computations) — and say
+explicitly why MBQL wasn't sufficient when this happens. See
+`prompts/chart-generation.md` for the full sequence.
 
 When native SQL genuinely is necessary, don't ship it as a one-off raw-SQL
 question: save it as a **Model** first, then build the actual chart on top
