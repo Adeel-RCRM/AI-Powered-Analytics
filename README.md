@@ -53,44 +53,31 @@ Open this folder in VS Code with Claude Code active, and say any of:
 
 - "Start the project"
 - "Start analysis"
-- "Analyze an account"
-- "Recommend charts"
 - "Create analytics"
 
 Claude will then:
 
 1. Verify Metabase CLI configuration.
-2. Ask which kind of work you want: **General** (no fixed workflow — just
-   tell Claude the account and what to build), **Recommendation Engine**
-   (full insight-discovery), **Default Dashboard** (the standardized
-   onboarding dashboard every account gets, built automatically), **Important
-   Metrics Dashboard** (the standardized hiring-efficiency dashboard every
-   account gets, also built automatically), or **Transcript to Insights**
-   (turn a pasted client meeting transcript into chart recommendations
-   grounded in that account's real data).
+2. Ask which kind of work you want: **Requirements Intake** (you state chart
+   requirements directly — a list, a pasted client doc — and Claude grounds
+   each in that account's real data; this project's primary flow),
+   **Transcript to Insights** (turn a pasted client meeting transcript into
+   chart recommendations grounded in that account's real data), **Default
+   Dashboard** (the standardized onboarding dashboard every account gets,
+   built automatically), or **Important Metrics Dashboard** (the
+   standardized hiring-efficiency dashboard every account gets, also built
+   automatically).
 
-The **General** flow just asks for the account number and then "What would
-you like to build?" — whatever you describe, Claude discovers only the data
-needed to support it, checks it against the same data-quality/duplicate
-rules as every other flow, and builds the chart(s) directly (confirming
-first only if the request is ambiguous or implies more than one chart).
+The **Requirements Intake** flow asks for the account number and your chart
+requirements directly, checks known patterns/reference material first and
+falls back to live discovery, asks a clarifying question only when a
+requirement is genuinely ambiguous, and presents a numbered list of
+buildable charts before asking which to create.
 
-For the **Recommendation Engine** flow, Claude then:
-
-3. Asks which Recruit CRM account (account number) to analyze.
-4. Asks which entity you want chart recommendations for — a plain-text
-   numbered list built from the entities actually discovered for that
-   account, with "All" first and "Do you have anything in mind?" (free-text)
-   last.
-5. Asks how many chart recommendations you want.
-6. Discovers the account's actual data through `mb` (databases, tables,
-   fields, existing charts), scoped to your chosen entity/focus.
-7. Analyzes it for meaningful, trustworthy business insights.
-8. Presents the requested number of ranked recommendations, each with: what
-   it shows, why it's useful, what question it answers, what triggered it,
-   and what to investigate.
-9. On your confirmation, creates the chosen chart(s) in Metabase via `mb
-   card create`, verifies them, and hands you back the card reference.
+The **Transcript to Insights** flow asks for the account number and the
+pasted transcript, extracts analytics requirements from it, grounds each in
+the account's real data, and presents a numbered list of buildable charts
+before asking which to create.
 
 The **Default Dashboard** flow instead just asks for the account number and
 runs `scripts/create_default_dashboard.py`, which discovers the account's
@@ -101,12 +88,14 @@ account number and runs `scripts/create_important_metrics_dashboard.py`,
 which discovers the account's data and builds its own standard chart set
 (jobs & hiring efficiency, ratios, trends, candidate diversity) end-to-end.
 
-The **Transcript to Insights** flow asks for the account number and the
-pasted transcript, extracts analytics requirements from it, grounds each in
-the account's real data, and presents a numbered list of buildable charts
-before asking which to create.
+Every discovery/resolution step in the two conversational flows
+(Requirements Intake, Transcript to Insights) works from schema metadata
+(table/column names, types) only — it never samples, queries, or displays
+the account's actual row data. The one narrow, documented exception is
+described in "Where charts touch real data" below. The two dashboard scripts
+follow the same metadata-only discovery internally.
 
-See `docs/workflow.md` for all five flows written out in more detail, and
+See `docs/workflow.md` for all four flows written out in more detail, and
 `CLAUDE.md` for the operating instructions Claude itself follows.
 
 ## Project structure
@@ -116,16 +105,21 @@ CLAUDE.md                  Persistent operating instructions for Claude
 README.md                  This file
 .env.example                Credential placeholders (copy to .env)
 .gitignore
-config/analysis-config.md  Tunable defaults (ranking weights, thresholds)
+config/analysis-config.md  Tunable defaults (data-quality thresholds, chart-type defaults)
 prompts/
-  discovery.md              Recommendation Engine: map the account's actual data
-  analysis.md                Recommendation Engine: find real insights, data-quality gate
-  recommendation.md          Recommendation Engine: rank + format recommendations
-  chart-generation.md        Recommendation Engine: create + verify charts in Metabase
+  discovery.md              Map the account's actual data (metadata only, both conversational flows)
+  chart-generation.md        Create + verify charts in Metabase (both conversational flows)
   transcript-insights.md     Transcript to Insights: transcript -> grounded chart candidates
+  requirements-intake.md     Requirements Intake: stated requirements -> grounded chart candidates
+  infeasible-requirement.md  How to handle a requirement the account's real data can't support
+  metabase_skill_improvement.md  Prompt for building references/ (schema map, metric glossary,
+                              canonical patterns) that Requirements Intake checks first once built
 docs/
   architecture.md            System shape and rationale
-  workflow.md                Human-readable walkthrough of all five flows
+  workflow.md                Human-readable walkthrough of all four flows
+references/
+  schema-map.md              Structural (metadata-only) map of the 12 core Recruit CRM tables
+  metric-glossary.md         Business-term definitions confirmed by the user, per account
 scripts/
   mb-login.sh                                    One-time helper: .env -> mb auth login
   create_default_dashboard.py                    Automates the Default Dashboard flow end-to-end
@@ -143,6 +137,20 @@ logs/
   repo, never printed by Claude.
 - Claude never connects directly to a database, calls the Metabase REST API
   directly, or uses browser automation — every operation goes through `mb`.
+
+### Where charts touch real data
+
+Discovery, requirement resolution, and follow-up clarifying questions are
+metadata-only (table/column names and types via `mb table fields`, existing
+card/dashboard *names* via `mb search`) — never a value sample, `SELECT`, or
+opened saved query. Business-term definitions (a stage list, what "active"
+means) are resolved by asking the user or from `references/metric-glossary.md`,
+never by querying live data to check or guess. The one narrow exception:
+when a chart genuinely needs native SQL (MBQL can't express the logic), the
+finished, user-confirmed query is run once against real data immediately
+before saving, because a dry-run can't validate SQL text — see
+`prompts/chart-generation.md`'s validation step. MBQL queries only ever get
+dry-run validated (never executed) before creation.
 
 ## Related Claude Code skills (not used by this workflow today)
 
@@ -176,10 +184,11 @@ Claude will only invoke one if the task genuinely calls for it:
 - No web pages of this project's own — recommendations and explanations are
   delivered as terminal/chat output; the only dashboard/card content that
   exists is what gets created in Metabase itself (Default Dashboard flow,
-  Important Metrics Dashboard flow, or confirmed General / Recommendation
-  Engine / Transcript to Insights charts).
-- Transcript to Insights creates individual cards only — dashboard assembly
-  for that flow is future scope, not built yet.
+  Important Metrics Dashboard flow, or confirmed Requirements Intake /
+  Transcript to Insights charts).
+- Requirements Intake and Transcript to Insights create individual cards
+  only — dashboard assembly for those two flows is future scope, not built
+  yet.
 - Chart creation depends on what the installed `mb` CLI version actually
   supports; if a capability isn't available, Claude will say so rather than
   working around it with a different interface.

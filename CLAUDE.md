@@ -60,25 +60,16 @@ status`) directly in the main conversation. If it fails, stop and tell the
 user exactly what to fix. Do not proceed to Step 0.5 on broken config.
 
 **Step 0.5 — Ask which kind of work to do.**
-Once configuration is verified, ask which kind of work to do. Present it as a
-**plain-text numbered list in a normal message** — do not use the
-`AskUserQuestion` tool here, since it hard-caps at 4 options and there are
-now 5:
+Once configuration is verified, ask via `AskUserQuestion` (4 discrete
+options — this is what that tool is for, unlike Step 2's entity list below):
 
-```
-What would you like to do?
-1. General
-2. Recommendation Engine
-3. Default Dashboard
-4. Important Metrics Dashboard
-5. Transcript to Insights
-```
-
-- **General** — no fixed workflow: just an account and a free-text
-  statement of what to build, then charts created directly against that
-  account's real data to match it: skip straight to "General flow" below.
-- **Recommendation Engine** — the full insight-discovery workflow: proceed
-  to Step 1 below.
+- **Requirements Intake** — the user states chart requirements directly
+  (a single ask, a numbered list, a pasted client doc) rather than a
+  transcript: skip straight to "Requirements Intake flow" below. This is
+  this project's primary flow.
+- **Transcript to Insights** — turn a client meeting transcript into chart
+  recommendations grounded in that account's real data: skip straight to
+  "Transcript to Insights flow" below.
 - **Default Dashboard** — the standardized onboarding dashboard every
   Advanced Analytics client gets, automated end-to-end: skip straight to
   "Default Dashboard flow" below (no entity choice, no recommendation count —
@@ -90,43 +81,66 @@ What would you like to do?
   Metrics Dashboard flow" below (no entity choice, no recommendation count —
   same fixed set of charts for every account, adapted to that account's
   actual data).
-- **Transcript to Insights** — turn a client meeting transcript into chart
-  recommendations grounded in that account's real data: skip straight to
-  "Transcript to Insights flow" below.
 
-### General flow
+### Transcript to Insights flow
 
-No fixed sequence of steps — this flow exists for requests that don't fit
-the structured Recommendation Engine, the two standard dashboards, or a
-transcript. It still obeys every hard constraint above (Starrocks-only,
-`mb`-only, additive-only, never fabricate).
+Turns a client meeting transcript (call recording / notetaker output) into
+chart recommendations grounded in that account's real data. Follow
+`prompts/transcript-insights.md` for the full method — summary:
 
-1. Ask exactly: "Which Recruit CRM account would you like to work with?
+1. Ask exactly: "Which Recruit CRM account is this transcript for? Please
+   provide the account number."
+2. Ask exactly: "Please paste the full transcript." Wait for it — accept
+   whatever length/format it comes in (raw call recording transcript or
+   notetaker output), don't ask the user to reformat it first.
+3. Extract the analytics requirements actually expressed in the transcript,
+   then ground each one in this account's real discovered data (the same
+   discovery step described in `prompts/discovery.md`) — never invent a
+   chart for a requirement the account's data can't actually support; say so
+   explicitly instead (see `prompts/transcript-insights.md`'s data-quality
+   handling).
+4. Present the resulting charts as a **numbered list** (per
+   `prompts/transcript-insights.md`'s format), citing what in the transcript
+   drove each one.
+5. Ask which recommendation(s) to actually create (same confirm-before-create
+   gate as `prompts/chart-generation.md` — "create all" creates every one
+   presented). Create confirmed charts under "Data Team WIP" using the
+   account-collection convention described in "Where created charts live"
+   below — individual cards only, **not** a dashboard. Dashboard assembly
+   for this flow is future scope, not built yet.
+6. Log per "History log" below.
+
+### Requirements Intake flow
+
+Turns requirements the user states directly — not a transcript, not
+open-ended discovery — into chart recommendations grounded in that account's
+real data. Follow `prompts/requirements-intake.md` for the full method —
+summary:
+
+1. Ask exactly: "Which Recruit CRM account are these requirements for?
    Please provide the account number."
-2. Ask exactly: "What would you like to build?" Wait for a free-text
-   answer — a specific chart, metric, comparison, or anything else. Take
-   whatever they describe as the request; don't force it into an entity
-   choice or a recommendation count.
-3. Locate the account's data (see "Locating the account's data" below) and
-   discover only what's needed to fulfill the stated request — a scoped
-   pass over `prompts/discovery.md`'s method, not full multi-entity
-   discovery, unless the request itself spans multiple entities.
-4. Check the request against the data quality gate (`prompts/analysis.md`)
-   before building anything. If the requested chart can't be built
-   trustworthy on the actual data (missing field/table, too little or too
-   dirty data), say so plainly — per "Error handling" below — and ask how
-   the user wants to proceed instead of forcing something misleading.
-5. Check for existing duplicates (per "Avoiding duplicate charts") before
-   creating.
-6. Build and create the chart(s) per "Chart creation" below (GUI/MBQL
-   first, validate, `mb card create`, verify with `mb card get`). If the
-   request is ambiguous or could reasonably become more than one chart,
-   briefly state what you're about to build and confirm before creating; if
-   it's already unambiguous and singular, just build it and report back.
-   Cards live directly in the account's collection per "Where created
-   charts live" — no nested sub-collection, same convention as the
-   Recommendation Engine and Transcript to Insights flows.
-7. Log per "History log" below, with `"source": "general"` on its entries.
+2. Ask exactly: "Please share your chart requirements — a single ask, a
+   numbered list, or a pasted client doc listing several." Accept whatever
+   format it comes in.
+3. Resolve each requirement in order: check `references/canonical-patterns.md`
+   for a known shape first (if it exists), then `references/schema-map.md`/
+   `references/metric-glossary.md`, then fall back to live discovery per
+   `prompts/discovery.md` — in full, never invent a chart for a requirement
+   the account's data can't actually support (say so explicitly instead).
+   Group requirements that share an entity/model before building.
+4. Ask a clarifying question only when a requirement is genuinely ambiguous
+   in a way that changes the query (per `prompts/requirements-intake.md`'s
+   "When to actually ask a question") — never as a general hedge.
+5. Present the resulting charts as a **numbered list** (per
+   `prompts/requirements-intake.md`'s format), citing which requirement drove
+   each one.
+6. Ask which recommendation(s) to actually create (same confirm-before-create
+   gate as `prompts/chart-generation.md` — "create all" creates every one
+   presented; resolve any open questions before creating a card that had
+   one). Create confirmed charts under "Data Team WIP" using the
+   account-collection convention described in "Where created charts live"
+   below — individual cards only, **not** a dashboard.
+7. Log per "History log" below.
 
 ### Default Dashboard flow
 
@@ -166,90 +180,6 @@ transcript. It still obeys every hard constraint above (Starrocks-only,
    already exists), relay that plainly — don't retry with guesses or force
    anything.
 
-### Transcript to Insights flow
-
-Turns a client meeting transcript (call recording / notetaker output) into
-chart recommendations grounded in that account's real data. Follow
-`prompts/transcript-insights.md` for the full method — summary:
-
-1. Ask exactly: "Which Recruit CRM account is this transcript for? Please
-   provide the account number."
-2. Ask exactly: "Please paste the full transcript." Wait for it — accept
-   whatever length/format it comes in (raw call recording transcript or
-   notetaker output), don't ask the user to reformat it first.
-3. Extract the analytics requirements actually expressed in the transcript,
-   then ground each one in this account's real discovered data (same
-   discovery step as the Recommendation Engine flow, `prompts/discovery.md`)
-   — never invent a chart for a requirement the account's data can't
-   actually support; say so explicitly instead (see
-   `prompts/transcript-insights.md`'s data-quality handling).
-4. Present the resulting charts as a **numbered list** (per
-   `prompts/transcript-insights.md`'s format), citing what in the transcript
-   drove each one.
-5. Ask which recommendation(s) to actually create (same confirm-before-create
-   gate as `prompts/chart-generation.md` — "create all" creates every one
-   presented). Create confirmed charts under "Data Team WIP" using the same
-   account-collection convention as the Recommendation Engine flow (see
-   "Where created charts live") — individual cards only, **not** a dashboard.
-   Dashboard assembly for this flow is future scope, not built yet.
-6. Log per "History log" below.
-
-### Recommendation Engine flow
-
-**Step 1 — Ask for the account.**
-Ask exactly: "Which Recruit CRM account would you like to analyze? Please
-provide the account number." Wait for the answer. Store it as the current
-analysis context for the rest of the conversation.
-
-**Step 2 — Ask which entity to focus on.**
-First locate the account (see "Locating the account's data" below) far enough
-to know what entities/tables actually exist for it (a table-name-level pass —
-`mb search <account_number>` and/or `database get --include tables` — is
-enough; full field-level discovery still happens in Step 4). If the account
-can't be located, ask the user to confirm the account number rather than
-guessing. Then present the choice as a **plain-text numbered list in a normal message** — do not use the
-`AskUserQuestion` tool here, since it hard-caps at 4 options and an account
-can easily have far more entities than that:
-
-```
-Which entity would you like chart recommendations for?
-1. All
-2. <Entity name — only entities actually discovered for this account>
-3. <Entity name>
-   ...
-N. Do you have anything in mind?
-```
-
-- Option 1 ("All") means no entity scoping — proceed across every relevant
-  entity as usual.
-- Middle options are the real entity names discovered for *this* account
-  only (never a fixed/generic list) — one per entity that actually exists.
-- The last option ("Do you have anything in mind?") invites a free-text
-  answer — a specific business question, entity combination, or angle the
-  user has in mind that isn't just "one entity." Take whatever they type as
-  the analysis focus.
-- Store the answer as the entity/focus scope for the rest of the
-  conversation. If a specific entity (or custom focus) was chosen, Steps 4's
-  discovery and analysis should concentrate there — related tables can still
-  be joined in for context (e.g. Jobs alongside Deals), but candidate
-  insights should center on the chosen scope rather than surveying
-  everything.
-
-**Step 3 — Ask for the recommendation count.**
-Ask exactly: "How many chart recommendations would you like me to generate?"
-Accept any positive integer. Re-ask on anything else (non-numeric, zero,
-negative). Store it as the requested count, N.
-
-**Step 4 — Discover → Analyze → Recommend → Create**, in that order, following
-`prompts/discovery.md`, `prompts/analysis.md`, `prompts/recommendation.md`,
-and `prompts/chart-generation.md`. Don't skip ahead to recommending charts
-before discovery and analysis are actually done against real data. Respect
-the entity/focus scope from Step 2 throughout.
-
-Run all `mb` calls directly in the main conversation — do not delegate this
-work to subagents/forks. It's fine for command output and discovery
-narration to be visible in the terminal as the work happens.
-
 ## Configuration verification
 
 Before any Metabase operation:
@@ -278,35 +208,23 @@ profile store is the source of truth.
 
 ## Locating the account's data
 
-**Always use the "Production Starrocks" database (id `13371569`) for every
-account's data.** This Metabase instance also has a legacy "Recruit CRM"
-database (id `13371338`, Redshift) that holds an older, often-unreachable
-duplicate copy of the same per-account tables (e.g. `candidates_<account>`
-exists in both). Live queries against it can fail outright even for
-long-standing, otherwise-correct cards — this is a real, observed
-infrastructure gap, not a hypothetical. Never use it, even if a `mb search`
-happens to surface it first: when resolving a table by name, confirm the
-match's `db_id` is `13371569` before using it (`mb table get <id> --fields
-id,name,db_id`), or scope the search directly with `mb search <name>
---models table --db-id 13371569`.
+Recruit CRM data lives per-account as suffixed tables (e.g.
+`candidates_662`, `jobs_662`) in one shared Starrocks warehouse (db id
+`13371569`) — never a database per account, and never the legacy Redshift
+"Recruit CRM" database (`13371338`), which holds an often-unreachable
+duplicate copy. Given an account number, confirm it exists before doing
+anything else:
 
-Recruit CRM accounts map onto Starrocks as per-account-suffixed tables in one
-shared warehouse (e.g. `companies_<account>`, `deals_<account>`,
-`contacts_<account>`, `jobs_<account>`, `candidates_<account>`,
-`assign_job_candidate_<account>`, `call_logs_<account>`) — never a dedicated
-database per account. Don't assume the exact set of entities exists for a
-given account though — verify with `mb search`:
+```bash
+mb search <account_number> --models table --db-id 13371569 --limit 20 --json
+```
 
-1. `mb search <table-name-prefix>_<account_number> --models table --db-id
-   13371569 --json` to find a given entity's table for this account. Search
-   results surface a table's `display_name` under the `name` key, not its
-   raw underlying name — confirm the exact raw name (and `db_id`) via `mb
-   table get <id> --fields id,name,db_id` before trusting a match.
-2. `mb search <account_number> --limit 20 --json` (unscoped) can help locate
-   matching cards or dashboards by name, e.g. for the duplicate-chart check.
-3. If the account genuinely cannot be located on Starrocks, ask the user to
-   confirm the account number rather than guessing or falling back to the
-   legacy Redshift database.
+Confirm at least one result is a real table (e.g. `candidates_<account_number>`)
+with `db_id: 13371569` — a name match on the wrong database doesn't count.
+This is purely a metadata/existence check (table names, not row content). If
+nothing matches, tell the user the account couldn't be found (per "Error
+handling" below) rather than guessing or proceeding on an unconfirmed
+account number.
 
 ## Data discovery
 
@@ -338,27 +256,14 @@ ask rather than guess.
 
 ## Data quality gate
 
-Before any insight is proposed as a recommendation, check it against
-`prompts/analysis.md`'s data-quality criteria: null-heavy fields, empty
-statuses, very small record counts, missing/invalid dates, suspicious
-distributions. If an otherwise-interesting pattern rests on data too thin or
+Before any chart is presented as a recommendation, check it against these
+data-quality criteria: null-heavy fields, empty statuses, very small record
+counts, missing/invalid dates, suspicious distributions (thresholds in
+`config/analysis-config.md`, e.g. treat under ~20 records in a slice as too
+small to trust). If an otherwise-buildable chart rests on data too thin or
 too dirty to trust, drop it and note internally why — don't surface a
 misleading chart. Prefer explaining a gap to the user over silently
 substituting a weaker but "safer" chart with no comment.
-
-## Insight-first analysis, then ranking
-
-Discover actual patterns in this account's real data before naming candidate
-charts — never start from a fixed template list. `prompts/analysis.md` lists
-example angles (funnel bottlenecks, recruiter performance, stalled jobs,
-client activity, candidate trends) — treat them as prompts for investigation,
-not a checklist to force through regardless of what the data shows.
-
-Rank candidate insights per `prompts/recommendation.md`'s criteria (business
-impact, pattern strength, actionability, data reliability, relevance,
-uniqueness vs. existing content, clarity of communication). Return exactly N
-recommendations if N valid, trustworthy insights exist; if fewer exist, say
-so explicitly rather than padding with generic filler charts.
 
 ## Avoiding duplicate charts
 
@@ -372,13 +277,15 @@ Skip recommending a chart that duplicates an existing one unless the new
 version is materially better, more current, or answers a genuinely different
 question — say which of those applies.
 
-## Presenting recommendations
-
-Use the exact structure in `prompts/recommendation.md` for every
-recommendation: Recommended Chart, Chart Type, Insight, Business Question,
-Why This Chart, Recommended Metrics, Recommended Filters, Data Evidence.
-Data Evidence must cite the actual pattern observed — never fabricated
-numbers.
+**This check is name/description-level only — never open a matched card's
+saved query (`mb card get <id>`, its `dataset_query`) to mine business
+values out of it** (a hiring-stage order from its `CASE` expression, a
+category literal from its filters, etc.). That's a side door back to
+"discovering real values without asking" — the same thing forbidden
+elsewhere in this file for live field queries, just via an existing card
+instead of the raw table. A term's values, order, or definition come only
+from the user or `references/metric-glossary.md`, never from what an old
+card happens to already encode, no matter how plausible it looks.
 
 ## Chart creation
 
@@ -389,6 +296,15 @@ required logic genuinely cannot be expressed in MBQL (e.g. the stage-ordinal
 stage, window functions, or similarly complex computations) — and say
 explicitly why MBQL wasn't sufficient when this happens. See
 `prompts/chart-generation.md` for the full sequence.
+
+When native SQL genuinely is necessary, don't ship it as a one-off raw-SQL
+question: save it as a **Model** first, then build the actual chart on top
+of that Model through the GUI/MBQL editor, so the result stays drillable and
+editable like any other question. Weigh this against clutter, though — don't
+promote every one-off SQL question to its own Model. Only do it when the
+underlying logic is genuinely reusable across more than one likely question
+(e.g. the stage-ordinal current-stage calculation) — for a true one-off, a
+native SQL question on its own is fine, just say why it isn't a Model.
 
 Only after recommendations are presented and explained:
 
@@ -401,8 +317,8 @@ Only after recommendations are presented and explained:
 3. Verify the created card with `mb card get <id>` and report back its id,
    name, and a link/reference the user can open in Metabase.
 4. If a chart can't be created because a required field/table isn't
-   available, say so and move to the next-ranked recommendation instead of
-   forcing something with the wrong data.
+   available, say so and move to the next recommendation instead of forcing
+   something with the wrong data.
 
 Never create more cards than the user actually confirmed.
 
@@ -425,16 +341,15 @@ inside a sub-collection named for the account number being analyzed.
    `mb collection create --body '{"name":"<account_number>","parent_id":199}'`.
 4. Never create a card outside this account-scoped collection.
 
-This is the Recommendation Engine flow's convention — the General and
-Transcript to Insights flows use the same convention (individual cards
-directly in the account's collection). The Default Dashboard and Important
-Metrics Dashboard flows instead nest their cards one level deeper, each in
-their own sub-collection under the account's collection — "Default
-Dashboard Charts" (see "Default Dashboard flow" above and
-`scripts/create_default_dashboard.py`) or "Important Metrics Dashboard
-Charts" (see "Important Metrics Dashboard flow" above and
-`scripts/create_important_metrics_dashboard.py`) — each flow's dashboard
-still sits directly in the account's collection.
+This is the convention for Transcript to Insights and Requirements Intake —
+both create individual cards directly in the account's collection (neither
+flow assembles a dashboard). The Default Dashboard and Important Metrics
+Dashboard flows instead nest their cards one level deeper, each in their own
+sub-collection under the account's collection — "Default Dashboard Charts"
+(see "Default Dashboard flow" above and `scripts/create_default_dashboard.py`)
+or "Important Metrics Dashboard Charts" (see "Important Metrics Dashboard
+flow" above and `scripts/create_important_metrics_dashboard.py`) — each
+flow's dashboard still sits directly in the account's collection.
 
 ## History log
 
@@ -454,22 +369,23 @@ self-contained JSON line; don't rewrite existing lines).
 
 Append an entry at these points:
 
-- **After presenting recommendations** (end of `prompts/recommendation.md`'s
-  Step 4, or `prompts/transcript-insights.md`'s output step): one
+- **After presenting recommendations** (end of `prompts/requirements-intake.md`'s
+  or `prompts/transcript-insights.md`'s output step): one
   `recommendations_presented` entry.
   ```json
-  {"timestamp": "2026-08-18T23:41:00Z", "type": "recommendations_presented", "account": "662", "entity_scope": "All", "count_requested": 5, "count_returned": 5, "recommendations": [{"rank": 1, "insight": "...", "chart_name": "...", "chart_type": "bar"}]}
+  {"timestamp": "2026-08-18T23:41:00Z", "type": "recommendations_presented", "account": "662", "count_returned": 5, "recommendations": [{"rank": 1, "insight": "...", "chart_name": "...", "chart_type": "bar"}]}
   ```
 - **After each card is created and verified** (`prompts/chart-generation.md`
   step 7): one `chart_created` entry per card.
   ```json
   {"timestamp": "2026-08-18T23:45:00Z", "type": "chart_created", "account": "662", "recommendation_rank": 1, "card_id": 70801, "name": "...", "chart_type": "bar", "collection_id": 24521}
   ```
-  For entries from the Transcript to Insights flow, add `"source":
-  "transcript"`, and for the General flow add `"source": "general"`, to
-  both event types above (omit `source` — or use `"source":
-  "insight_discovery"` — for the Recommendation Engine flow) so all three
-  are distinguishable in `logs/history.jsonl`.
+  Add `"source": "transcript"` to entries from the Transcript to Insights
+  flow, or `"source": "requirements_intake"` to entries from the
+  Requirements Intake flow (and use `"requirement"` in place of `"insight"`
+  in the `recommendations` array for that flow) so the two are
+  distinguishable in `logs/history.jsonl`. Both event types above take this
+  same `source` tagging.
 - **After a Default Dashboard run** (`scripts/create_default_dashboard.py`
   appends this itself — see the script): one `default_dashboard_created` (or
   `_skipped` / `_failed`) entry.
@@ -486,7 +402,7 @@ Append an entry at these points:
 
 Any other genuinely useful event (e.g. an account that couldn't be located,
 an analysis that had to be skipped for insufficient data) is fine to log too
-with a descriptive `type` — the four above aren't an exhaustive list, just
+with a descriptive `type` — the events above aren't an exhaustive list, just
 the required minimum.
 
 ## Recruit CRM / Metabase data model — standing knowledge
@@ -517,43 +433,40 @@ itself. The row *content* differs; only the `id` repeats.
   unique per *candidate-job pair*, not per row. `COUNT(*)` over this table
   counts stage-history rows, not unique candidates.
 - **Deals**: duplicate-id rows exist to normalize collaborator names instead
-  of a comma-separated list. Deal *value* is already split across those
-  rows (e.g. a $100 deal with 3 collaborators might show as 30/30/40) —
-  `SUM(deal_value)` across them gives the correct total, but counting deals
-  needs `COUNT(DISTINCT id)`, never `COUNT(*)`.
+  of a comma-separated list. **Whether `deal_value` is split across those
+  rows or repeated in full on each one is not consistent across accounts —
+  verify it on this account's actual data before summing, never assume
+  either way.** Observed on account 116830: a 5-collaborator "Equal Split"
+  deal (`deal_split_percentage` 20 each) still carried the *full* deal value
+  (4000) on every one of its 5 rows, not a 800/800/800/800/800 split — a
+  bare `SUM(deal_value)` there would overcount that deal's revenue 5x.
+  Check with a query like `SELECT id, deal_value, deal_split_percentage,
+  collaborator_name FROM deals_<account> WHERE id IN (SELECT id FROM
+  deals_<account> GROUP BY id HAVING COUNT(*) > 1) ORDER BY id` on a
+  multi-collaborator deal for *this* account first. If it's split (values
+  sum to the total), `SUM(deal_value)` is correct. If it's repeated (values
+  are identical per id, as on 116830), aggregate to one row per id first —
+  e.g. `SELECT id, MIN(deal_value) AS deal_value FROM deals_<account> GROUP
+  BY id` — then `SUM` that. Either way, counting deals still needs
+  `COUNT(DISTINCT id)`, never `COUNT(*)`.
 - **Pitched Candidates**: a new row per status change — same pattern as
   Assignments.
 - **Notes / Tasks / Meetings**: a new row per association (e.g. one note
   linked to multiple records can appear more than once under the same
   `id`) — dedupe before counting.
 
-**"Latest hiring stage" vs. "maximum/farthest hiring stage" — two distinct
-questions, never conflate them.** For the same candidate-job pair these can
-give different answers (e.g. a candidate reached "Shortlisted", was
-rejected, then re-applied and is now back at "Applied" — the latest stage is
-"Applied" but the maximum stage reached is still "Shortlisted"). If a
-request just says "current stage" ambiguously, ask which of the two is
-meant rather than guessing.
-
-- **Latest hiring stage** — whichever stage the candidate-job pair is in
-  most recently in time, taken purely from the `hiring_stage` value itself
-  (the row with `MAX(stage_date)`, or the most recent row by insertion
-  order if dates tie) — **no funnel-order `CASE` ranking involved.** Use
-  this whenever the request is phrased as "latest"/"most recent"/"current as
-  of now" hiring stage.
-- **Maximum/farthest hiring stage** — the furthest a candidate-job pair has
-  ever progressed through the funnel, regardless of recency. Timestamps
-  between consecutive stage changes are often only seconds apart, so
-  `MAX(stage_date)` does **not** reliably identify this — instead rank
-  stages by their actual business/funnel order (discover this account's
-  real `hiring_stage` values first — never reuse another account's stage
-  list) with a `CASE` expression assigning each stage an ordinal, giving any
-  unrecognized value a large fallback ordinal (e.g. 100), then take the row
-  with `MAX(ordinal)` per candidate-job pair. Use this whenever the request
-  is phrased as "farthest"/"furthest"/"maximum"/"highest progressed" hiring
-  stage. Example shape (values are illustrative — rebuild the mapping from
-  this account's discovered stages, in the order they actually represent
-  funnel progression):
+**Determining a candidate's current/furthest pipeline stage:** timestamps
+between consecutive stage changes are often only seconds apart, so
+`MAX(stage_date)` does **not** reliably identify the furthest-progressed
+stage. Instead, rank stages by their actual business/funnel order — **ask
+the user directly for this account's exact `hiring_stage` values and their
+funnel order; never query the field's live values to discover them, and
+never reuse another account's stage list** — with a `CASE` expression
+assigning each stage an ordinal, giving any unrecognized value a large
+fallback ordinal (e.g. 100), then take the row with `MAX(ordinal)` per
+candidate-job pair as the current stage. Example shape (values are
+illustrative — rebuild the mapping from the stage list and order the user
+gave you for this account):
 
 ```
 CASE
@@ -566,9 +479,49 @@ CASE
 END
 ```
 
-Apply this whenever a query needs the candidate's **maximum/farthest**
-stage — never apply it when "latest" is what's actually meant (see above),
-and never apply it blindly with another account's exact stage names.
+Apply this whenever a query needs "the candidate's current stage" — never
+apply it blindly with another account's exact stage names.
+
+**There is currently no column encoding a stage's numeric order.** A
+`hiring_stage_number`-style column that would make this directly
+discoverable is planned but not yet added to the data. Until it exists,
+never infer the funnel order from naming, alphabetical order, or
+`MIN(stage_date)` — ask the user directly for the complete, exact list and
+order of this account's `hiring_stage` values before building the ordinal
+`CASE` mapping above; never query the field's live/cached values
+(`mb field values`, `mb field summary`, or any `mb query`) to find or
+confirm them instead of asking. Record the answer in
+`references/metric-glossary.md` so it's asked once per account, not every
+session. Once a `hiring_stage_number`-style column exists for an account,
+that's schema metadata (a declared field, not a value sample) — prefer
+reading the order from its presence/description over asking, but still
+don't query its live values to reverse-engineer the mapping; ask the user
+to confirm if the field's meaning isn't already documented.
+
+**Stage-to-stage conversion ratios — avoid a naive ratio.** A straight
+`COUNT(stage = B) / COUNT(stage = A)` between two funnel stages (e.g. "2nd
+Interview" → "Final Interview") can be wrong even when both counts are
+individually correct: data issues (a skipped stage, a manual correction) can
+put an id in stage B without it ever having a row in stage A, so the
+numerator isn't actually a subset of the denominator population. Build the
+ratio as a double summarization instead:
+
+1. First summarize: one row per id per stage it has ever reached (e.g.
+   `COUNT(DISTINCT id)` grouped by `id`, `hiring_stage`).
+2. Use that to isolate the correct denominator population: only the ids
+   that actually reached the earlier stage (e.g. reached "2nd Interview" at
+   least once).
+3. Second summarize, restricted to that population: how many of those ids
+   also reached the later stage (e.g. "Final Interview"). Divide by the
+   count from step 2.
+
+This is usually buildable entirely in the GUI/MBQL editor as a summarize on
+top of a filtered summarize — it does not require native SQL. Example:
+submitted-to-placed rate by company = (count of distinct ids per company
+that reached "Placed") / (count of distinct ids per company that reached
+"Submitted"), each side counted after first reducing to one row per id per
+stage — never a raw `COUNT(*)` ratio. Apply the same technique to any
+funnel-stage conversion metric, not just this example pair.
 
 ## Error handling — exact wording
 
@@ -579,6 +532,12 @@ and never apply it blindly with another account's exact stage names.
 - Account not found: ask the user to verify the account number.
 - Insufficient data for a specific analysis: name which analysis is affected
   and why, then continue with what the data does support.
+- A requirement that can't be answered at all (missing data, or an
+  assumption its definition rests on doesn't hold — e.g. "at-risk" meaning
+  deals in a "Lost" stage the account has none of): follow
+  `prompts/infeasible-requirement.md` — confirm the finding with the user
+  first, then draft a customer-ready explanation, rather than just noting it
+  and moving on.
 
 ## Style
 
