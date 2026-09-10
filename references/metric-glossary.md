@@ -73,6 +73,13 @@ with no priors, rather than checking the data — or existing content — itself
    confirmed mapping here once you answer, so the same mismatch doesn't get
    re-asked next time.
 
+8. **Currency** — per CLAUDE.md "Value formatting", monetary fields
+   (`deal_value`, `budget_allocated`, `cost_in_currency`, salary/package
+   fields, etc.) must be chart-formatted with the right currency symbol, and
+   that currency is never assumed. For account 662 specifically (if you want
+   its monetary charts formatted): which ISO 4217 currency code applies
+   (e.g. USD, EUR, GBP, INR)?
+
 
 **Term mappings (this account only):**
 - "Sent to the client" / "Send to the client" → `hiring_stage = 'Send to the client'` (exact literal, stage 7)

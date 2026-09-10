@@ -24,29 +24,38 @@ account collection, one level up. This keeps default-dashboard charts
 visually separate from anything the Requirements Intake or Transcript to
 Insights flows create directly in the account collection.
 
-Usage:
-    python3 scripts/create_default_dashboard.py --profile <mb-profile> [--account <number>]
+Every monetary card (Total Cost of Calls, Deal Target Achieved, Total Deal
+Value per Company, Deal Value Closed Over Time) is formatted in the currency
+confirmed for this run (see --currency) rather than a hardcoded symbol - a
+client could be billed in USD, EUR, GBP, or anything else, and this is never
+assumed (see CLAUDE.md "Value formatting").
 
-If --account is omitted, the script prompts for it interactively.
+Usage:
+    python3 scripts/create_default_dashboard.py --profile <mb-profile> [--account <number>] [--currency <ISO code>]
+
+If --account or --currency is omitted, the script prompts for it interactively.
 """
 import argparse
 import copy
 import json
+import re
 import subprocess
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 TEMPLATE_PATH = Path(__file__).parent / "default_dashboard_template.json"
 LOG_PATH = Path(__file__).parent.parent / "logs" / "history.jsonl"
 PARENT_COLLECTION_ID = 199  # "Data Team WIP" - see CLAUDE.md
 DEFAULT_DEAL_TARGET_GOAL = 1_000_000  # from the reference dashboard's "Deal Target Achieved" card
+IST = ZoneInfo("Asia/Kolkata")
 
 
 def log_event(event_type, **fields):
     """Append one entry to logs/history.jsonl - see CLAUDE.md "History log"."""
-    entry = {"timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "type": event_type, **fields}
+    entry = {"timestamp": datetime.now(IST).strftime("%Y-%m-%dT%H:%M:%S+05:30"), "type": event_type, **fields}
     with open(LOG_PATH, "a") as f:
         f.write(json.dumps(entry) + "\n")
 
@@ -55,6 +64,13 @@ def log_event(event_type, **fields):
 # copy of the same tables in the legacy "Recruit CRM" Redshift database
 # (id 13371338) - that one must never be used.
 STARROCKS_DATABASE_ID = 13371569
+
+# Cards whose value is a monetary sum - see CLAUDE.md "Value formatting".
+# Their currency is never assumed (a client could be billed in USD, EUR,
+# GBP, etc.) - it's confirmed with the user once per run (see --currency)
+# and applied here instead of a hardcoded symbol.
+MONETARY_CARD_KEYS = {"total_cost_of_calls", "deal_target_achieved", "total_deal_value_per_company", "deal_value_closed_over_time"}
+CURRENCY_CODE_RE = re.compile(r"^[A-Za-z]{3}$")
 
 
 class MbError(RuntimeError):
@@ -244,6 +260,22 @@ def apply_deal_goal(card, visualization_settings, deal_goal):
     return visualization_settings
 
 
+def apply_currency_formatting(card, visualization_settings, currency_code):
+    """Format this card's monetary total using the currency confirmed with
+    the user (see CLAUDE.md "Value formatting") - never a hardcoded symbol,
+    since a client could be billed in USD, EUR, GBP, or anything else."""
+    if card["key"] not in MONETARY_CARD_KEYS:
+        return visualization_settings
+    visualization_settings = copy.deepcopy(visualization_settings)
+    column_settings = visualization_settings.setdefault("column_settings", {})
+    column_settings['["name","sum"]'] = {
+        "number_style": "currency",
+        "currency": currency_code,
+        "currency_style": "symbol",
+    }
+    return visualization_settings
+
+
 def find_collection_node(node, target_id):
     """`mb collection tree` takes no id argument - it always returns the
     whole tree from the true root, regardless of what's passed - so finding
@@ -298,9 +330,21 @@ def main():
     parser.add_argument("--account", help="Recruit CRM account number. Prompted for if omitted.")
     parser.add_argument("--deal-target-goal", type=float, default=DEFAULT_DEAL_TARGET_GOAL,
                          help=f"Goal value for the 'Deal Target Achieved' card (default: {DEFAULT_DEAL_TARGET_GOAL}, taken from the reference dashboard)")
+    parser.add_argument("--currency", help="ISO 4217 code (e.g. USD, EUR, GBP, INR) for this account's monetary "
+                         "charts (Total Cost of Calls, Deal Target Achieved, Total Deal Value per Company, Deal "
+                         "Value Closed Over Time). Never assumed - prompted for if omitted (see CLAUDE.md "
+                         "\"Value formatting\").")
     args = parser.parse_args()
 
     profile = args.profile
+
+    currency_code = args.currency
+    while not currency_code or not CURRENCY_CODE_RE.match(currency_code):
+        if currency_code:
+            print(f"'{currency_code}' doesn't look like a 3-letter ISO 4217 currency code - try again.")
+        currency_code = input("Which currency should this account's monetary charts be formatted in "
+                               "(ISO code, e.g. USD, EUR, GBP, INR)? ").strip()
+    currency_code = currency_code.upper()
 
     print(f"Verifying Metabase authentication for profile '{profile}'...")
     base_url = verify_auth(profile)
@@ -361,6 +405,7 @@ def main():
             continue
 
         viz = apply_deal_goal(card, card["visualization_settings"], args.deal_target_goal)
+        viz = apply_currency_formatting(card, viz, currency_code)
         body = {
             "name": card["name"],
             "display": card["display"],
@@ -464,6 +509,7 @@ def main():
         cards_created=len(created_cards),
         cards_skipped=[{"name": n, "reason": r} for n, r in skipped],
         profile=profile,
+        currency=currency_code,
     )
 
 
