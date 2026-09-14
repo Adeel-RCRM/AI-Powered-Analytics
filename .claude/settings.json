@@ -1,19 +1,4 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(mb uuid *)",
-      "Bash(mb card *)",
-      "Bash(rm -f /Users/recruitcrm/Documents/AI-Powered-Analytics/.scratch/_card_*.json *)",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('defs',{}\\).get\\('temporal_bucketing.yaml', d.get\\('defs',{}\\)\\), indent=2\\)[:3000]\\)\")",
-      "Read(//opt/homebrew/lib/node_modules/@metabase/cli/skill-data/**)",
-      "Bash(mb --version)",
-      "Bash(mb upgrade *)",
-      "Bash(grep -n \"Closed \\\\`display\\\\` enum\\\\|display.*enum\\\\|\\\\`table\\\\`, \\\\`bar\\\\`\" /opt/homebrew/lib/node_modules/@metabase/cli/skill-data/visualization/SKILL.md)"
-    ],
-    "additionalDirectories": [
-      "/Users/recruitcrm/Documents/AI-Powered-Analytics/.scratch"
-    ]
-  },
   "hooks": {
     "PostToolUse": [
       {
