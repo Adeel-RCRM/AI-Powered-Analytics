@@ -111,8 +111,11 @@ using only fields that were actually discovered — never assumed schema.
      Metabase's default** — see CLAUDE.md "Combo chart series display" for
      why leaving any series unset is never safe here.
 5. Resolve the destination collection — see CLAUDE.md "Where created charts
-   live": the account's sub-collection under collection 199 ("Data Team
-   WIP"), creating it if it doesn't exist yet.
+   live": whichever convention Requirements Intake's step 2 settled on for
+   this request — the account's sub-collection under collection 199 ("Data
+   Team WIP"), or the "<Dashboard Name> Cards" sub-collection under the
+   account's own collection's **Cards** folder — creating whichever
+   collections in the chain don't exist yet.
 6. Create the card:
 
 ```bash
@@ -121,10 +124,11 @@ mb card create --file ./.scratch/<name>.json --profile <profile> --json
 
 Include a meaningful `name`, the validated `dataset_query`, chosen `display`,
 minimal sensible `visualization_settings`, and `collection_id` set to the
-resolved account collection. Add filters from the recommendation's
-"Recommended Filters" as query filters or dashboard-ready parameters where
-appropriate. Only include a `description` if the user opted in at step 2 —
-when they didn't, omit the field entirely rather than adding one anyway.
+resolved destination collection from step 5. Add filters from the
+recommendation's "Recommended Filters" as query filters or dashboard-ready
+parameters where appropriate. Only include a `description` if the user
+opted in at step 2 — when they didn't, omit the field entirely rather than
+adding one anyway.
 
 7. **Verify** the created card:
 

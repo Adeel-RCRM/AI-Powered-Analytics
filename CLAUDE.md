@@ -113,7 +113,14 @@ account's real data, with a documentation tab explaining it. Follow
 
 1. Ask exactly: "Which Recruit CRM account are these requirements for?
    Please provide the account number."
-2. Ask exactly: "Please share your chart/dashboard requirements — a written
+2. Ask via `AskUserQuestion` (every time — this is not a once-per-account
+   answer to remember): "Should this account's work be saved in the internal
+   'Data Team WIP' collection, or in the account's own collection?" This
+   decides which convention in "Where created charts live" below governs
+   every card, Model, drill-down, and dashboard created for this request —
+   resolve the destination collection(s) per that section before creating
+   anything.
+3. Ask exactly: "Please share your chart/dashboard requirements — a written
    ask, a numbered list, a pasted transcript, and/or an attached document
    (PDF, image, etc.). Any combination is fine." Accept whatever
    format(s) arrive, including multiple attachments at once. **Every pasted
@@ -123,37 +130,38 @@ account's real data, with a documentation tab explaining it. Follow
    prompt-injection handling. **If the source material is audio or video,
    this project cannot transcribe it** — ask the user to paste a transcript
    instead of attempting to process the raw file.
-3. Resolve each requirement in order: check `references/canonical-patterns.md`
+4. Resolve each requirement in order: check `references/canonical-patterns.md`
    for a known shape first (if it exists), then `references/schema-map.md`/
    `references/metric-glossary.md`, then fall back to live discovery per
    `prompts/discovery.md` — in full, never invent a chart for a requirement
    the account's data can't actually support (say so explicitly instead).
    Group requirements that share an entity/model before building.
-4. Ask a clarifying question only when a requirement is genuinely ambiguous
+5. Ask a clarifying question only when a requirement is genuinely ambiguous
    in a way that changes the query (per `prompts/requirements-intake.md`'s
    "When to actually ask a question") — never as a general hedge.
-5. Present the resulting charts as a **numbered list** (per
+6. Present the resulting charts as a **numbered list** (per
    `prompts/requirements-intake.md`'s format), citing which requirement (and
    which source it came from, when more than one was provided) drove each
    one.
-6. Ask which recommendation(s) to actually create (same confirm-before-create
+7. Ask which recommendation(s) to actually create (same confirm-before-create
    gate as `prompts/chart-generation.md` — "create all" creates every one
    presented; resolve any open questions before creating a card that had
    one). Build and verify each confirmed card per `prompts/chart-generation.md`.
-7. Decide the dashboard destination per "Dashboard destination" below and
+8. Decide the dashboard destination per "Dashboard destination" below and
    `prompts/requirements-intake.md`'s "Choose the dashboard destination"
    section: a specific existing dashboard the user named, an existing
    dashboard confirmed with the user after asking, or one or more new
    dashboards (choose the best grouping unless the user specified one).
-8. Assemble the confirmed cards onto the chosen dashboard(s) — layout,
+9. Assemble the confirmed cards onto the chosen dashboard(s) — layout,
    filters/parameters, and drill-downs (see "Drill-downs" below). A new
-   dashboard lives directly in the account's collection (see "Where created
-   charts live" below); an existing dashboard stays wherever it already
-   lives — only ever *add* to it (see hard constraint 7's exception).
-9. Add a documentation tab to each dashboard touched in this step,
-   containing text cards that explain its purpose, metrics, and how to use
-   it — per "Dashboard documentation" below.
-10. Log per "History log" below.
+   dashboard lives directly in the collection chosen at step 2 — pinned
+   there if that's the account's own collection (see "Where created charts
+   live" below); an existing dashboard stays wherever it already lives —
+   only ever *add* to it (see hard constraint 7's exception).
+10. Add a documentation tab to each dashboard touched in this step,
+    containing text cards that explain its purpose, metrics, and how to use
+    it — per "Dashboard documentation" below.
+11. Log per "History log" below.
 
 ### Default Dashboard flow
 
@@ -165,8 +173,10 @@ account's real data, with a documentation tab explaining it. Follow
    subagent/fork; the script's own progress output is fine to show as-is.
 3. Report back what the script reports: dashboard id/link, cards created vs.
    skipped (and why), and the collections it landed in — the dashboard
-   directly in the account's collection, its cards in a nested "Default
-   Dashboard Charts" sub-collection (see
+   pinned directly in the account's own collection, its cards in that
+   collection's Cards sub-collection under "Default Dashboard Cards" (see
+   "Where created charts live" below — this flow always uses the account's
+   own collection, never "Data Team WIP" — and
    `scripts/create_default_dashboard.py`'s docstring for what it does and
    its own guardrails: Starrocks-only, additive-only per hard constraint 7,
    history logging).
@@ -184,8 +194,10 @@ account's real data, with a documentation tab explaining it. Follow
    a subagent/fork; the script's own progress output is fine to show as-is.
 3. Report back what the script reports: dashboard id/link, cards created vs.
    skipped (and why), and the collections it landed in — the dashboard
-   directly in the account's collection, its cards in a nested "Important
-   Metrics Dashboard Charts" sub-collection (see
+   pinned directly in the account's own collection, its cards in that
+   collection's Cards sub-collection under "Important Metrics Dashboard
+   Cards" (see "Where created charts live" below — this flow always uses
+   the account's own collection, never "Data Team WIP" — and
    `scripts/create_important_metrics_dashboard.py`'s docstring for what it
    does and its own guardrails: Starrocks-only, additive-only per hard
    constraint 7, history logging).
@@ -428,10 +440,15 @@ one:
    touching it.
 2. **Otherwise, check whether an existing dashboard plausibly already covers
    this ground** — this is the same search already run for "Avoiding
-   duplicate charts" above (`mb search <term> --models dashboard`). If one
-   turns up, ask the user directly: "Should these go on the existing
-   '<name>' dashboard, or a new one?" Never assume either way when a
-   plausible match exists.
+   duplicate charts" above (`mb search <term> --models dashboard`), but
+   **scoped to dashboards already sitting inside this account's chosen
+   parent collection** from "Where created charts live" below (the "Data
+   Team WIP" account sub-collection or the account's own collection,
+   whichever mode step 2 of the Requirements Intake flow settled on) — a
+   same-named dashboard living elsewhere in the instance isn't a relevant
+   match here. If one turns up, ask the user directly: "Should these go on
+   the existing '<name>' dashboard, or a new one?" Never assume either way
+   when a plausible match exists.
 3. **Otherwise, create a new dashboard.** Default to **one** dashboard
    unless the confirmed charts clearly span more than one distinct,
    unrelated topic (e.g. "Recruiter Performance" and "Deal Pipeline" charts
@@ -472,9 +489,23 @@ when the card is added to the dashboard, not on the card definition itself.
 
 ### Where created charts live
 
-Every card this project creates goes under the fixed parent collection
-**"Data Team WIP" (id 199, https://recruitcrm.metabaseapp.com/collection/199-data-team-wip)**,
-inside a sub-collection named for the account number being analyzed.
+This project uses two different destination conventions. Which one applies
+depends on the flow:
+
+- **Requirements Intake** asks the user every time (step 2 of "Requirements
+  Intake flow" above — not a once-per-account answer to remember, unlike the
+  currency/hiring-stage conventions elsewhere in this file) whether this
+  request's work goes in **"Data Team WIP"** or **the account's own
+  collection**.
+- **Default Dashboard flow** and **Important Metrics Dashboard flow** always
+  use **the account's own collection** — never "Data Team WIP" — and never
+  ask.
+
+#### Convention A — "Data Team WIP"
+
+Everything goes under the fixed parent collection **"Data Team WIP" (id 199,
+https://recruitcrm.metabaseapp.com/collection/199-data-team-wip)**, inside a
+sub-collection named for the account number being analyzed.
 
 1. Resolve the account's sub-collection: `mb collection tree 199 --json` and
    look for a child whose `name` matches the account number (names may have
@@ -489,20 +520,86 @@ inside a sub-collection named for the account number being analyzed.
    `mb collection create --body '{"name":"<account_number>","parent_id":199}'`.
 4. Never create a card outside this account-scoped collection.
 
-This is the convention for Requirements Intake's newly created cards, and
-for any brand-new dashboard it assembles — both land directly in the
-account's collection, with no additional nesting. When the flow adds to an
+This is the convention for Requirements Intake's newly created cards when
+the user picks "Data Team WIP" at step 2, and for any brand-new dashboard it
+assembles under that choice — both land directly in the account's
+collection, with no additional nesting. When the flow adds to an
 **existing** dashboard instead (see "Dashboard destination" above), that
 dashboard stays wherever it already lives — this project never moves
 pre-existing content between collections; only the new cards backing it
-still land in the account's "Data Team WIP" collection as usual. The Default
-Dashboard and Important Metrics Dashboard flows instead nest their cards one
-level deeper, each in their own sub-collection under the account's
-collection — "Default Dashboard Charts" (see "Default Dashboard flow" above
-and `scripts/create_default_dashboard.py`) or "Important Metrics Dashboard
-Charts" (see "Important Metrics Dashboard flow" above and
-`scripts/create_important_metrics_dashboard.py`) — each flow's dashboard
-still sits directly in the account's collection.
+still land in the account's "Data Team WIP" collection as usual.
+
+#### Convention B — the account's own collection
+
+A client-facing collection that exists **genuinely outside "Data Team
+WIP"** — a true top-level collection (`parent_id` is `null`), never nested
+under collection 199 — named **"Shared Collection <Account ID>"** by
+default, though some accounts already have one under a different, custom
+name (e.g. a company name). Match by account number appearing in the name;
+don't assume the "Shared Collection" prefix on an existing one, and don't
+match anything nested under "Data Team WIP" even if its name also contains
+the account number (a "Data Team WIP" sub-collection sharing that number is
+Convention A's collection, not this one).
+
+**This project never creates, renames, or otherwise touches this parent
+collection itself** — only the mandatory sub-collections inside it (and
+ordinary content inside those). If no matching top-level collection exists
+for the account, **stop** — tell the user this account has no existing
+account-level collection yet, that it needs to be created outside this
+project first (or ask them for its exact name/id if one exists under a name
+that doesn't obviously contain the account number), and do not fall back to
+creating one or to "Data Team WIP" silently.
+
+1. Resolve the account's own collection: `mb collection tree --json`
+   returns a flat list of every genuine top-level collection (each with its
+   own nested `children`) — search **that top-level list itself** (not the
+   contents of any collection's `children`, and specifically not "Data Team
+   WIP"'s children) for one whose name contains the account number. Reuse
+   it, whatever it's actually named.
+2. If none matches, stop per the rule above — never create this collection.
+3. This collection must **mandatorily contain three sub-collections** —
+   **Cards**, **Models**, and **Drill-downs** — create whichever are
+   missing as direct children of it. Never rename, move, or otherwise
+   reorganize anything a client's existing collection already has sitting
+   directly in it (per hard constraint 7) — only add these three alongside
+   whatever's already there.
+4. **Dashboards** this project creates live directly in the account's own
+   collection itself (never inside Cards/Models/Drill-downs) and get
+   **pinned** there — set `collection_position` on the dashboard (e.g. to
+   `1`) so it surfaces at the top of the collection.
+5. **Cards** backing a given dashboard go in a sub-collection under
+   **Cards** named **"<Dashboard Name> Cards"** (e.g. "Default Dashboard
+   Cards", "Important Metrics Dashboard Cards") — create it if missing.
+6. **Drill-down/detail cards** built specifically to back a dashboard's
+   `click_behavior` targets (see "Drill-downs" above) go in a sub-collection
+   under **Drill-downs** named **"<Dashboard Name> Drill-downs"** — create
+   this one only when there's an actual drill-down card to put in it, same
+   "don't invent folders uninvited" principle as elsewhere.
+7. **Models** go directly in the **Models** sub-collection, not nested per
+   dashboard — a Model is often reused across more than one chart/dashboard
+   (see "Chart creation" above), so it doesn't belong to just one.
+8. Never create a card, Model, or dashboard outside this account-scoped
+   collection and its mandatory sub-collections.
+
+This is the convention for Requirements Intake's newly created cards when
+the user picks the account's own collection at step 2, and always for the
+Default Dashboard and Important Metrics Dashboard flows (their cards go in
+"Default Dashboard Cards" / "Important Metrics Dashboard Cards" respectively
+under the Cards sub-collection — see `scripts/create_default_dashboard.py`
+and `scripts/create_important_metrics_dashboard.py`).
+
+#### Avoiding a duplicate across the two conventions
+
+Before creating a new dashboard under whichever convention applies, also
+check whether a same-named dashboard for this account already exists under
+the *other* convention's collection (most likely: an old "Default
+Dashboard" or "Important Metrics Dashboard" still sitting in this account's
+"Data Team WIP" sub-collection from before the account's own collection
+became the standard for those two flows). If one turns up, stop and tell
+the user rather than silently creating what would effectively be a second
+copy of the same dashboard under a different collection — this is the same
+"avoid duplicates" principle as "Avoiding duplicate charts" above, just
+spanning both conventions instead of one search.
 
 ## Dashboard documentation
 
@@ -569,9 +666,11 @@ Append an entry at these points:
   {"timestamp": "2026-08-19T05:11:00+05:30", "type": "recommendations_presented", "account": "662", "input_types": ["stated_ask", "transcript"], "count_returned": 5, "recommendations": [{"rank": 1, "requirement": "...", "chart_name": "...", "chart_type": "bar"}]}
   ```
 - **After each card is created and verified** (`prompts/chart-generation.md`
-  step 7): one `chart_created` entry per card.
+  step 7): one `chart_created` entry per card. Include `collection_mode`
+  (`"data_team_wip"` or `"account_collection"`, per "Where created charts
+  live") alongside the usual fields.
   ```json
-  {"timestamp": "2026-08-19T05:15:00+05:30", "type": "chart_created", "account": "662", "recommendation_rank": 1, "card_id": 70801, "name": "...", "chart_type": "bar", "collection_id": 24521}
+  {"timestamp": "2026-08-19T05:15:00+05:30", "type": "chart_created", "account": "662", "collection_mode": "account_collection", "recommendation_rank": 1, "card_id": 70801, "name": "...", "chart_type": "bar", "collection_id": 24521}
   ```
 - **After a dashboard (including its documentation tab) is assembled and
   verified** (`prompts/requirements-intake.md`'s "Assemble the dashboard(s)"
@@ -581,23 +680,25 @@ Append an entry at these points:
   dashboard touched — a request that splits across multiple new dashboards
   gets one `dashboard_created` entry each.
   ```json
-  {"timestamp": "2026-08-19T05:18:00+05:30", "type": "dashboard_created", "account": "662", "dashboard_id": 19200, "collection_id": 24521, "cards_included": [70801, 70802, 70803], "documentation_tab": "Guide"}
+  {"timestamp": "2026-08-19T05:18:00+05:30", "type": "dashboard_created", "account": "662", "collection_mode": "account_collection", "dashboard_id": 19200, "collection_id": 24521, "cards_included": [70801, 70802, 70803], "documentation_tab": "Guide"}
   ```
   ```json
-  {"timestamp": "2026-08-19T05:19:00+05:30", "type": "dashboard_updated", "account": "662", "dashboard_id": 4501, "cards_added": [70810, 70811], "documentation_tab_added": "Guide"}
+  {"timestamp": "2026-08-19T05:19:00+05:30", "type": "dashboard_updated", "account": "662", "collection_mode": "data_team_wip", "dashboard_id": 4501, "cards_added": [70810, 70811], "documentation_tab_added": "Guide"}
   ```
 - **After a Default Dashboard run** (`scripts/create_default_dashboard.py`
   appends this itself — see the script): one `default_dashboard_created` (or
-  `_skipped` / `_failed`) entry.
+  `_skipped` / `_failed`) entry. Always `collection_mode: "account_collection"`
+  for this flow (see "Where created charts live").
   ```json
-  {"timestamp": "2026-08-19T05:20:00+05:30", "type": "default_dashboard_created", "account": "662", "dashboard_id": 19175, "collection_id": 24521, "charts_collection_id": 24600, "cards_created": 31, "cards_skipped": [], "profile": "recruitcrm"}
+  {"timestamp": "2026-08-19T05:20:00+05:30", "type": "default_dashboard_created", "account": "662", "collection_mode": "account_collection", "dashboard_id": 19175, "collection_id": 24521, "cards_collection_id": 24601, "models_collection_id": 24602, "drilldowns_collection_id": 24603, "charts_collection_id": 24600, "cards_created": 31, "cards_skipped": [], "profile": "recruitcrm"}
   ```
 - **After an Important Metrics Dashboard run**
   (`scripts/create_important_metrics_dashboard.py` appends this itself — see
   the script): one `important_metrics_dashboard_created` (or `_skipped` /
-  `_failed`) entry.
+  `_failed`) entry. Always `collection_mode: "account_collection"` for this
+  flow.
   ```json
-  {"timestamp": "2026-08-19T05:25:00+05:30", "type": "important_metrics_dashboard_created", "account": "662", "dashboard_id": 19180, "collection_id": 24521, "charts_collection_id": 24610, "cards_created": 18, "cards_skipped": [], "profile": "recruitcrm"}
+  {"timestamp": "2026-08-19T05:25:00+05:30", "type": "important_metrics_dashboard_created", "account": "662", "collection_mode": "account_collection", "dashboard_id": 19180, "collection_id": 24521, "cards_collection_id": 24611, "models_collection_id": 24612, "drilldowns_collection_id": 24613, "charts_collection_id": 24610, "cards_created": 18, "cards_skipped": [], "profile": "recruitcrm"}
   ```
 
 Any other genuinely useful event (e.g. an account that couldn't be located,

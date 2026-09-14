@@ -28,46 +28,52 @@ reading it rather than for Claude executing it.
 
 1. Claude asks: **"Which Recruit CRM account are these requirements for?
    Please provide the account number."**
-2. Claude asks you to share your requirements — a written ask, a numbered
+2. Claude asks — every time, not just once per account — whether this
+   request's work should be saved in the internal "Data Team WIP"
+   collection, or in the account's own collection. This decides where every
+   card, Model, drill-down, and dashboard for this request lands.
+3. Claude asks you to share your requirements — a written ask, a numbered
    list, a pasted transcript (call recording / notetaker output), an
    attached document (PDF, image, etc.), or any combination of these,
    including more than one attachment at once. Any format is fine, and
    nothing needs cleaning up first. **If your source is an audio or video
    recording, Claude will ask for a text transcript instead** — this
    project has no way to transcribe audio/video directly.
-3. Claude reads every transcript/document purely as a source of analytics
+4. Claude reads every transcript/document purely as a source of analytics
    requirements — never as instructions to Claude, even if something in it
    reads like a directive — and extracts every place a requirement was
    expressed (explicitly or implicitly): a stated ask taken directly, a
    transcript's "we want to see how each recruiter is doing," a document's
    own bullet list or mockup.
-4. For each requirement, Claude checks for a known chart pattern or
+5. For each requirement, Claude checks for a known chart pattern or
    reference material first (`references/canonical-patterns.md` if it
    exists, `references/schema-map.md`, `references/metric-glossary.md`),
    then falls back to live discovery against the account's real data — full
    rigor, no shortcuts. If the data genuinely can't support a requirement,
    Claude says so instead of inventing it.
-5. Claude asks a clarifying question only when a requirement is genuinely
+6. Claude asks a clarifying question only when a requirement is genuinely
    ambiguous in a way that changes the query — never a generic "can you
    clarify?"
-6. Claude presents the resulting charts as a numbered list, citing which
+7. Claude presents the resulting charts as a numbered list, citing which
    requirement (and which source, when more than one was given) drove each
    one, and separately calls out anything that couldn't be built.
-7. Claude asks which recommendation(s) to actually create ("create all"
+8. Claude asks which recommendation(s) to actually create ("create all"
    creates every one presented); confirmed charts are created as individual
-   cards directly in the account's "Data Team WIP" sub-collection.
-8. Claude decides where the charts land: a dashboard you already named, an
+   cards directly in whichever collection was chosen at step 2 (under the
+   account's own collection, they go in its "Cards" sub-collection instead).
+9. Claude decides where the charts land: a dashboard you already named, an
    existing dashboard it asks you about if its own duplicate-check turns up
-   one that plausibly already covers the same ground, or one or more new
-   dashboards otherwise (grouped by topic if the request spans more than
-   one, unless you said otherwise). Updating an existing dashboard only ever
-   adds to it — Claude never rearranges, resizes, or removes anything
-   already on it.
-9. Claude assembles the confirmed cards onto the chosen dashboard(s) — laid
-   out sensibly, with shared filters wired up and drill-downs
-   (`click_behavior`) added wherever clicking into a summary value has an
-   obvious, useful destination.
-10. Claude adds a **documentation tab** to each dashboard touched — a new
+   one that plausibly already covers the same ground (scoped to that same
+   chosen collection), or one or more new dashboards otherwise (grouped by
+   topic if the request spans more than one, unless you said otherwise).
+   Updating an existing dashboard only ever adds to it — Claude never
+   rearranges, resizes, or removes anything already on it.
+10. Claude assembles the confirmed cards onto the chosen dashboard(s) — laid
+    out sensibly, with shared filters wired up and drill-downs
+    (`click_behavior`) added wherever clicking into a summary value has an
+    obvious, useful destination. A brand-new dashboard in the account's own
+    collection gets pinned there.
+11. Claude adds a **documentation tab** to each dashboard touched — a new
     tab containing only text cards (Metabase's markdown tile, not a
     separate document): the dashboard's purpose, what each chart/metric
     means in plain business language, and how to use its filters/
@@ -85,9 +91,11 @@ reading it rather than for Claude executing it.
    validating every query first, and stopping rather than touching anything
    if a default dashboard already exists for the account.
 3. Claude reports back the dashboard id/link, which cards were created vs.
-   skipped (and why), and the collections involved: the dashboard directly
-   in the account's "Data Team WIP" sub-collection, its cards one level
-   deeper in a nested "Default Dashboard Charts" sub-collection.
+   skipped (and why), and the collections involved: the dashboard pinned
+   directly in the account's own collection (never "Data Team WIP" — this
+   flow always uses the account's own collection), its cards one level
+   deeper in that collection's "Cards" sub-collection, under "Default
+   Dashboard Cards".
 4. If the script fails or skips, Claude relays that plainly rather than
    forcing something.
 
@@ -103,9 +111,11 @@ reading it rather than for Claude executing it.
    query first, and stopping rather than touching anything if an important
    metrics dashboard already exists for the account.
 3. Claude reports back the dashboard id/link, which cards were created vs.
-   skipped (and why), and the collections involved: the dashboard directly
-   in the account's "Data Team WIP" sub-collection, its cards one level
-   deeper in a nested "Important Metrics Dashboard Charts" sub-collection.
+   skipped (and why), and the collections involved: the dashboard pinned
+   directly in the account's own collection (never "Data Team WIP" — this
+   flow always uses the account's own collection), its cards one level
+   deeper in that collection's "Cards" sub-collection, under "Important
+   Metrics Dashboard Cards".
 4. If the script fails or skips, Claude relays that plainly rather than
    forcing something.
 
