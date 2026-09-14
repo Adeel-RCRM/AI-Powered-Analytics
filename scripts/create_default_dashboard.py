@@ -21,8 +21,8 @@ Every card this script creates lives in a "Default Dashboard Charts"
 sub-collection under the account's own collection (see
 resolve_charts_collection) - the dashboard itself sits directly in the
 account collection, one level up. This keeps default-dashboard charts
-visually separate from anything the Requirements Intake or Transcript to
-Insights flows create directly in the account collection.
+visually separate from anything the Requirements Intake flow creates
+directly in the account collection.
 
 Every monetary card (Total Cost of Calls, Deal Target Achieved, Total Deal
 Value per Company, Deal Value Closed Over Time) is formatted in the currency

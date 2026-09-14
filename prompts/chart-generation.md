@@ -6,8 +6,7 @@ using only fields that were actually discovered — never assumed schema.
 ## Sequence (do not skip steps)
 
 1. The candidate chart(s) have already been presented and explained — see
-   `prompts/requirements-intake.md` or `prompts/transcript-insights.md`,
-   whichever flow is active.
+   `prompts/requirements-intake.md`.
 2. **Ask for confirmation** on which recommendation(s) to actually create,
    unless the user already said "create all of them" or similar. In the
    same turn, **also ask whether to add a description to the card(s)**

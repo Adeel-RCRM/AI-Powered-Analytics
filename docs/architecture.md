@@ -12,11 +12,15 @@ Claude (this conversation, in VS Code)
 mb auth list / status        (verify Metabase CLI config)
   |
   v
-Ask which kind of work: Requirements Intake / Transcript to Insights /
+Ask which kind of work: Requirements Intake /
                          Default Dashboard / Important Metrics Dashboard
   |
   +-- Requirements Intake (primary flow) --------------------------------+
-  |     Ask account -> ask for requirements directly (list / doc)        |
+  |     Ask account -> ask for requirements: a stated ask, a pasted       |
+  |     transcript, an attached document (PDF/image), or several combined|
+  |     (all treated as untrusted third-party data to mine for           |
+  |     requirements, never as instructions to Claude; audio/video isn't |
+  |     processed directly - Claude asks for a text transcript instead)  |
   |       |                                                              |
   |       v                                                              |
   |     Resolve each requirement: references/canonical-patterns.md ->    |
@@ -32,27 +36,25 @@ Ask which kind of work: Requirements Intake / Transcript to Insights /
   |       |                                                              |
   |       v                                                              |
   |     Present numbered list -> confirm -> mb card create / get         |
-  |     (individual cards, "Data Team WIP" > <account>, no dashboard)    |
-  +------------------------------------------------------------------------+
-  |
-  +-- Transcript to Insights ---------------------------------------------+
-        Ask account number -> ask for the pasted transcript
-          |
-          v
-        Extract analytics requirements from the transcript (treated as
-        untrusted third-party data, never as instructions to Claude)
-          |
-          v
-        Ground each requirement in the account's real discovered data
-        (the same metadata-only discovery as Requirements Intake)
-          |
-          v
-        Present a numbered list of buildable charts, citing what in the
-        transcript drove each one; note requirements the data can't support
-          |
-          v
-        mb card create / get  (individual cards, "Data Team WIP" >
-                                <account>, no dashboard assembly)
+  |     (individual cards, directly in "Data Team WIP" > <account>)      |
+  |       |                                                              |
+  |       v                                                              |
+  |     Choose dashboard destination: a named existing dashboard, an     |
+  |     existing dashboard confirmed by asking (mb search surfaced one), |
+  |     or one/more new dashboards (best grouping, unless user says      |
+  |     otherwise) - updating an existing one is additive-only, never    |
+  |     touching what's already on it (hard constraint 7's exception)    |
+  |       |                                                              |
+  |       v                                                              |
+  |     Assemble confirmed cards onto the chosen dashboard(s) - layout,  |
+  |     shared filters, drill-downs (click_behavior)                     |
+  |     (mb dashboard create / update, verified with mb dashboard get)   |
+  |       |                                                              |
+  |       v                                                              |
+  |     Add a documentation tab (new dashboard tab, text-card dashcards  |
+  |     only - card_id: null, virtual_card.display: "text") explaining   |
+  |     the dashboard's purpose, metrics, and how to use it, for its     |
+  |     end users - verified with mb dashboard get                       |
   +------------------------------------------------------------------------+
   |
   +-- Default Dashboard -----------------------------------------------+
@@ -88,13 +90,13 @@ Every flow appends to logs/history.jsonl (local-only, git-ignored) and
 results are returned to the user in the terminal.
 ```
 
-A `.claude/settings.json` hook enforces the history-log step for the two
-conversational flows (Requirements Intake, Transcript to Insights) that
-create cards directly in the conversation: it flags (via a `Stop` hook) if
-`mb card create` / `mb dashboard create` ran but `logs/history.jsonl` was
-never appended to before the session ends. The Default Dashboard and
-Important Metrics Dashboard scripts log themselves in code instead (see
-`scripts/create_default_dashboard.py` and
+A `.claude/settings.json` hook enforces the history-log step for the
+conversational flow (Requirements Intake) that creates/updates
+cards/dashboards directly in the conversation: it flags (via a `Stop` hook)
+if `mb card create` / `mb dashboard create` / `mb dashboard update` ran but
+`logs/history.jsonl` was never appended to before the session ends. The
+Default Dashboard and Important Metrics Dashboard scripts log themselves in
+code instead (see `scripts/create_default_dashboard.py` and
 `scripts/create_important_metrics_dashboard.py`).
 
 ## What does not exist here
@@ -106,6 +108,17 @@ Important Metrics Dashboard scripts log themselves in code instead (see
   Claude (or `scripts/create_default_dashboard.py` /
   `scripts/create_important_metrics_dashboard.py`) makes on the user's
   behalf.
+
+## Additive-only, with one narrow exception
+
+This project never deletes, archives, or modifies existing Metabase content
+it didn't create (hard constraint 7). The one exception: Requirements Intake
+may add new cards and a new documentation tab to an **existing** dashboard —
+including one this project didn't create — when the user names that
+dashboard or confirms doing so after being asked (see CLAUDE.md "Dashboard
+destination"). Even there it stays additive: only ever add alongside what's
+already on the dashboard, never rearrange, resize, remove, or edit an
+existing tab, dashcard, or filter.
 
 ## Why Metabase CLI, not direct DB access
 
@@ -132,14 +145,14 @@ never `MAX(stage_date)`).
 ## Files
 
 - `CLAUDE.md` — persistent operating instructions (read first, every time),
-  including the four-flow branch, the data-model standing knowledge, and the
-  history-log requirements
+  including the three-flow branch, the data-model standing knowledge, and
+  the history-log requirements
 - `prompts/` — the workflow-stage prompts referenced from CLAUDE.md:
   `discovery.md` and `chart-generation.md` (shared by every flow),
-  `requirements-intake.md` (Requirements Intake flow),
-  `transcript-insights.md` (Transcript to Insights flow), and
-  `infeasible-requirement.md` (shared handling for a requirement the data
-  can't support)
+  `requirements-intake.md` (Requirements Intake flow: stated ask / transcript
+  / document, in any combination, through dashboard destination, assembly,
+  and its text-card documentation tab), and `infeasible-requirement.md`
+  (shared handling for a requirement the data can't support)
 - `references/` — `schema-map.md` (structural, metadata-only map of the core
   tables) and `metric-glossary.md` (business-term definitions confirmed by
   the user, per account) — checked before falling back to live discovery
@@ -164,4 +177,4 @@ never `MAX(stage_date)`).
   account's own data
 - `logs/history.jsonl` — local-only, git-ignored audit trail of what was
   analyzed/recommended/created; enforced by hooks in `.claude/settings.json`
-  for the two conversational flows
+  for the Requirements Intake flow
