@@ -120,9 +120,12 @@ these forks — resolve it by asking, never by querying live data to check.**
 e.g. the user writes "Internal Review Required" but the confirmed stage
 list (schema-map.md / metric-glossary.md) has no such value: ask directly
 ("did you mean the 'Internal Review' stage, or something else?") rather
-than running `mb field values`/`mb query` to see what's actually there. Once
-confirmed, record the mapping in `references/metric-glossary.md` so the same
-term doesn't get re-asked.
+than running `mb field values`/`mb query` to see what's actually there. **The
+moment it's confirmed — in the same turn, before resolving the next
+requirement — write the mapping into `references/metric-glossary.md`** under
+this account's `## Account <n>` section (creating it if it doesn't exist
+yet). Don't hold it in context to batch-write at the end of the flow; that's
+how the same term ends up getting re-asked next time.
 
 **Example of the same pattern from a transcript:** the client says "we need
 the latest assignments." That's ambiguous in a way that changes the query —

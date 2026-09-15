@@ -97,9 +97,11 @@ using only fields that were actually discovered — never assumed schema.
      account's currency isn't already recorded in
      `references/metric-glossary.md`, ask the user once (e.g. "Which
      currency should chart values use for this account — USD, EUR, GBP,
-     INR, or another?") before creating the card, then record the answer
-     there so later charts in this session and future sessions don't
-     re-ask.
+     INR, or another?") before creating the card, then **write the answer
+     to that account's `## Account <n>` section immediately — in the same
+     turn as the answer, before creating the card** — so later charts in
+     this session and future sessions don't re-ask. Don't defer this to a
+     later cleanup step; it's the whole reason "ask once per account" works.
    - **Show the value on every point/bar/segment by default** — see
      CLAUDE.md "Data labels": `"graph.show_values": true` for bar/line/
      area/row/combo/funnel, `"pie.percent_visibility": "inside"` or
