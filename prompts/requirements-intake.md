@@ -1,7 +1,8 @@
 # Requirements Intake
 
-Goal: build a dashboard (new or existing, one or several) with a
-documentation tab from requirements the user states directly — as a written ask, a pasted
+Goal: build a dashboard (new or existing, one or several), with an optional
+documentation tab when the user asks for one, from requirements the user
+states directly — as a written ask, a pasted
 transcript, an attached document (PDF, image, etc.), or any combination of
 these — check known reference material and canonical patterns first, ask
 only genuinely necessary clarifying questions, and never create anything
@@ -267,10 +268,12 @@ Then, on that dashboard:
    destination case applied (new vs. existing, and why, per "Choose the
    dashboard destination" above).
 
-## Add the documentation tab
+## Add the documentation tab (only if the user asks for one)
 
-On each dashboard just created or added to, add one more tab containing only
-text cards (per CLAUDE.md "Dashboard documentation"):
+Ask the user whether they'd like a documentation tab (a plain yes/no) before
+building one — never add it unprompted. If they say yes, add one more tab
+to each dashboard just created or added to, containing only text cards (per
+CLAUDE.md "Dashboard documentation"):
 
 1. Add a new entry to the dashboard's `tabs` array (negative id for a new
    tab, e.g. "Guide" or "About this dashboard") — never touching any tab
@@ -305,5 +308,5 @@ takes it:
   `"transcript"`, `"document"`, in any combination).
 - One `chart_created` entry per card actually created.
 - One `dashboard_created` entry per brand-new dashboard assembled (including
-  its documentation tab), or one `dashboard_updated` entry per existing
-  dashboard added to.
+  its documentation tab, if the user asked for one), or one
+  `dashboard_updated` entry per existing dashboard added to.

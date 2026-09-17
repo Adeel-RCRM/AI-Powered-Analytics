@@ -10,11 +10,11 @@ separate terminal ritual beyond the one-time `mb auth login` setup — that
 builds professional, functional, well-optimized, accurate charts and
 dashboards (with custom drill-downs and other Metabase-native features:
 filters, cross-filtering, tabs, etc.) against a Recruit CRM customer's actual
-analytics data (via Metabase), plus a dedicated **documentation tab** on that
-same dashboard — built from Metabase's own text cards, not a separate
-document — explaining its purpose, its metrics, and how to use it, written
-for the end users who'll actually read the dashboard, not for a teammate
-debugging the query.
+analytics data (via Metabase), with an optional **documentation tab** — built
+from Metabase's own text cards, not a separate document, and added only when
+the user asks for one — explaining its purpose, its metrics, and how to use
+it, written for the end users who'll actually read the dashboard, not for a
+teammate debugging the query.
 
 What gets built is driven by whatever the user provides: a stated
 requirement, a pasted transcript, an attached document (PDF, image, etc.), or
@@ -57,7 +57,8 @@ this project, and no dashboard application**. Do not build any of those. The
    script under `scripts/`.
 
    **One narrow, explicit exception:** the Requirements Intake flow may add
-   new dashcards and a new documentation tab to an **existing** dashboard —
+   new dashcards (and, if the user asks for one, a new documentation tab) to
+   an **existing** dashboard —
    including one this project did not create — when the user names that
    dashboard directly, or confirms doing so after being asked (see "Dashboard
    destination" below). This stays strictly additive even there: only ever
@@ -108,8 +109,9 @@ options — this is what that tool is for, unlike Step 2's entity list below):
 Turns requirements the user states directly — as a written ask, a pasted
 transcript, an attached document (PDF, image, etc.), or any combination of
 these — into a dashboard (new or existing, one or several) grounded in that
-account's real data, with a documentation tab explaining it. Follow
-`prompts/requirements-intake.md` for the full method — summary:
+account's real data, with an optional documentation tab explaining it when
+the user asks for one. Follow `prompts/requirements-intake.md` for the full
+method — summary:
 
 1. Ask exactly: "Which Recruit CRM account are these requirements for?
    Please provide the account number."
@@ -158,11 +160,12 @@ account's real data, with a documentation tab explaining it. Follow
    that's the account's own collection (see "Where created charts live"
    below); an existing dashboard stays wherever it already lives — only
    ever *add* to it (see hard constraint 7's exception).
-10. Add a documentation tab to each dashboard touched in this step,
-    containing text cards that explain its purpose, metrics, and how to use
-    it — per "Dashboard documentation" below. The dashboard is now
-    finalized: its cards, layout, filters, and documentation tab are in
-    place.
+10. Ask the user whether they'd like a documentation tab added (a plain
+    yes/no) — never build one unprompted. If yes, add it to each dashboard
+    touched in this step, containing text cards that explain its purpose,
+    metrics, and how to use it — per "Dashboard documentation" below. The
+    dashboard is now finalized: its cards, layout, filters, and (if
+    requested) documentation tab are in place.
 11. **Only once the dashboard is finalized**, ask the user whether to go
     ahead with drill-downs now (a plain yes/no confirmation) — never build
     them earlier in the same pass as the cards/layout above. Drill-downs
@@ -502,9 +505,9 @@ one:
    X") always wins over this default judgment call.
 
 **Updating an existing dashboard is additive-only**, per hard constraint 7's
-Requirements Intake exception: add the new cards and documentation tab
-alongside what's already there — never rearrange, resize, remove, or edit an
-existing tab, dashcard, or filter on it.
+Requirements Intake exception: add the new cards (and a documentation tab,
+if the user asks for one) alongside what's already there — never rearrange,
+resize, remove, or edit an existing tab, dashcard, or filter on it.
 
 ### Drill-downs
 
@@ -702,9 +705,9 @@ spanning both conventions instead of one search.
 
 ## Dashboard documentation
 
-Every dashboard the Requirements Intake flow creates or adds to gets a
-dedicated **documentation tab** — a new tab on that same dashboard containing
-only text cards (`card_id: null`,
+When the user asks for one, a dashboard the Requirements Intake flow
+creates or adds to gets a dedicated **documentation tab** — a new tab on
+that same dashboard containing only text cards (`card_id: null`,
 `visualization_settings.virtual_card.display: "text"` — see the `dashboard`
 and `visualization` skills), never a separate document. Written for the
 people who'll actually use the dashboard day-to-day, not for a teammate
@@ -732,10 +735,11 @@ Verify with `mb dashboard get <id> --json` after adding it — confirm the tab
 and its text cards landed as intended — and fold that confirmation into the
 same `dashboard_created`/`dashboard_updated` history-log entry (see "History
 log" below); the documentation tab isn't a separate created entity, so it
-doesn't get its own log-entry type. Only the Requirements Intake flow
-produces one today — the Default Dashboard and Important Metrics Dashboard
-flows are fixed, already-understood templates and don't get a documentation
-tab unless the user asks for one.
+doesn't get its own log-entry type. This is opt-in across every flow that
+can produce one — Requirements Intake included: build a documentation tab
+only when the user actually asks for one, never by default. The Default
+Dashboard and Important Metrics Dashboard flows are fixed,
+already-understood templates and follow the same rule.
 
 **Size every text card to its actual content — never reach for a fixed
 `size_y` out of habit.** The `dashboard` skill's default `text` size
@@ -805,13 +809,15 @@ Append an entry at these points:
   ```json
   {"timestamp": "2026-08-19T05:15:00+05:30", "type": "chart_created", "account": "662", "collection_mode": "account_collection", "recommendation_rank": 1, "card_id": 70801, "name": "...", "chart_type": "bar", "collection_id": 24521}
   ```
-- **After a dashboard (including its documentation tab) is assembled and
-  verified** (`prompts/requirements-intake.md`'s "Assemble the dashboard(s)"
-  and "Add the documentation tab" steps): one `dashboard_created` entry for
-  a brand-new dashboard, or one `dashboard_updated` entry when adding to an
-  existing one (per "Dashboard destination" in CLAUDE.md). One entry per
-  dashboard touched — a request that splits across multiple new dashboards
-  gets one `dashboard_created` entry each.
+- **After a dashboard (and its documentation tab, if the user asked for one)
+  is assembled and verified** (`prompts/requirements-intake.md`'s "Assemble
+  the dashboard(s)" and "Add the documentation tab" steps): one
+  `dashboard_created` entry for a brand-new dashboard, or one
+  `dashboard_updated` entry when adding to an existing one (per "Dashboard
+  destination" in CLAUDE.md). One entry per dashboard touched — a request
+  that splits across multiple new dashboards gets one `dashboard_created`
+  entry each. Omit the `documentation_tab`/`documentation_tab_added` field
+  when no tab was requested.
   ```json
   {"timestamp": "2026-08-19T05:18:00+05:30", "type": "dashboard_created", "account": "662", "collection_mode": "account_collection", "dashboard_id": 19200, "collection_id": 24521, "cards_included": [70801, 70802, 70803], "documentation_tab": "Guide"}
   ```
@@ -1133,9 +1139,9 @@ backlog" — never tacked onto the end of a Requirements Intake, Default
 Dashboard, or Important Metrics Dashboard flow unprompted. When asked,
 follow `prompts/project-improvement.md` in full: produce a short, concrete
 suggestion grounded in an actual pass over the project's own files —
-`CLAUDE.md`, `prompts/`, `references/`, `scripts/`, `config/` — never in
-conversation context (that's the automatic "Closing every task" step's
-job, not this one's) and never a generic checklist item, then log it to
+`CLAUDE.md`, `prompts/`, `references/`, `scripts/`, `config/` — never
+grounded in this conversation's own task and never a generic checklist
+item, then log it to
 `references/project-improvements.md` per that prompt's "Log it" step so it
 becomes part of a standing, **team-shared** backlog — unlike
 `logs/history.jsonl`, this file is committed, so a suggestion any

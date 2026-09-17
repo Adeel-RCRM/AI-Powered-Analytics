@@ -4,9 +4,9 @@ A workflow driven entirely by talking to Claude directly in VS Code — no web
 UI, no backend, no database of its own — that uses Claude + the Metabase CLI
 (`mb`) to build professional, well-optimized charts and dashboards (with
 custom drill-downs and other Metabase-native features) against a Recruit CRM
-customer's actual analytics data, plus a dedicated documentation tab (built
-from Metabase's own text cards, not a separate document) on each dashboard
-explaining it for the people who'll actually use it.
+customer's actual analytics data, with an optional documentation tab (built
+from Metabase's own text cards, not a separate document) added to a
+dashboard when asked, explaining it for the people who'll actually use it.
 
 Everything happens by talking to Claude in VS Code — describe what you need
 (a stated requirement, a pasted transcript, an attached PDF/image, or several
@@ -67,8 +67,9 @@ Claude will then:
    requirements directly, in whatever form you have them — a written ask, a
    numbered list, a pasted client transcript, an attached document (PDF,
    image, etc.), or several combined — and Claude grounds each in that
-   account's real data and assembles a dashboard, new or existing, with a
-   documentation tab explaining it; this project's primary flow),
+   account's real data and assembles a dashboard, new or existing, with an
+   optional documentation tab when you ask for one; this project's primary
+   flow),
    **Default Dashboard** (the standardized onboarding dashboard every
    account gets, built automatically), or **Important Metrics Dashboard**
    (the standardized hiring-efficiency dashboard every account gets, also
@@ -82,10 +83,11 @@ genuinely ambiguous, and presents a numbered list of buildable charts before
 asking which to create. Once confirmed, it decides where they land — a
 dashboard you named, an existing dashboard it asks you about if one plausibly
 already covers the same ground, or one or more new dashboards otherwise —
-assembles the charts there with drill-downs, and adds a documentation tab
-(built from Metabase's own text cards) explaining the dashboard for its end
-users. Audio/video sources aren't processed directly — Claude will ask for a
-text transcript instead, since this project has no transcription capability.
+assembles the charts there with drill-downs, and, if you ask for one, adds a
+documentation tab (built from Metabase's own text cards) explaining the
+dashboard for its end users. Audio/video sources aren't processed directly —
+Claude will ask for a text transcript instead, since this project has no
+transcription capability.
 
 The **Default Dashboard** flow instead just asks for the account number and
 runs `scripts/create_default_dashboard.py`, which discovers the account's
@@ -119,7 +121,8 @@ prompts/
   chart-generation.md        Create + verify one card in Metabase
   requirements-intake.md     Requirements Intake: stated ask / transcript / document (any
                               combination) -> grounded chart candidates -> dashboard
-                              (new or existing) with a text-card documentation tab
+                              (new or existing), optionally with a text-card
+                              documentation tab
   infeasible-requirement.md  How to handle a requirement the account's real data can't support
   metabase_skill_improvement.md  Prompt for building references/ (schema map, metric glossary,
                               canonical patterns) that Requirements Intake checks first once built

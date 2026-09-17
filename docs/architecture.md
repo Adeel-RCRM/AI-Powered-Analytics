@@ -54,10 +54,11 @@ Ask which kind of work: Requirements Intake /
   |     (mb dashboard create / update, verified with mb dashboard get)   |
   |       |                                                              |
   |       v                                                              |
-  |     Add a documentation tab (new dashboard tab, text-card dashcards  |
-  |     only - card_id: null, virtual_card.display: "text") explaining   |
-  |     the dashboard's purpose, metrics, and how to use it, for its     |
-  |     end users - verified with mb dashboard get                       |
+  |     Ask: add a documentation tab? (plain yes/no) - if yes, new        |
+  |     dashboard tab, text-card dashcards only - card_id: null,          |
+  |     virtual_card.display: "text" - explaining the dashboard's         |
+  |     purpose, metrics, and how to use it, for its end users -          |
+  |     verified with mb dashboard get                                    |
   +------------------------------------------------------------------------+
   |
   +-- Default Dashboard -----------------------------------------------+
@@ -119,8 +120,9 @@ code instead (see `scripts/create_default_dashboard.py` and
 
 This project never deletes, archives, or modifies existing Metabase content
 it didn't create (hard constraint 7). The one exception: Requirements Intake
-may add new cards and a new documentation tab to an **existing** dashboard —
-including one this project didn't create — when the user names that
+may add new cards (and, if the user asks for one, a new documentation tab)
+to an **existing** dashboard — including one this project didn't create —
+when the user names that
 dashboard or confirms doing so after being asked (see CLAUDE.md "Dashboard
 destination"). Even there it stays additive: only ever add alongside what's
 already on the dashboard, never rearrange, resize, remove, or edit an
@@ -157,7 +159,7 @@ never `MAX(stage_date)`).
   `discovery.md` and `chart-generation.md` (shared by every flow),
   `requirements-intake.md` (Requirements Intake flow: stated ask / transcript
   / document, in any combination, through dashboard destination, assembly,
-  and its text-card documentation tab), and `infeasible-requirement.md`
+  and an optional text-card documentation tab), and `infeasible-requirement.md`
   (shared handling for a requirement the data can't support)
 - `references/` — `schema-map.md` (structural, metadata-only map of the core
   tables) and `metric-glossary.md` (business-term definitions confirmed by

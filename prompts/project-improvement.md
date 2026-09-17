@@ -16,19 +16,11 @@ over session, instead of re-discovering the same rough edge repeatedly.
 
 ## Ground it in the project's own files, not the conversation
 
-This review is a different kind of check from CLAUDE.md's automatic
-"Closing every task: suggest a project improvement" step, and the two must
-not blur together:
-
-- **CLAUDE.md's closing step** runs after every task and is grounded in
-  whatever that specific task just surfaced in this conversation — a live
-  observation about the work just done, tied to that session's context.
-- **This review** is invoked deliberately, on its own, and is **never**
-  grounded in conversation context — not the current session's task, not
-  what was just built, not "recent activity." Even when it happens to be
-  asked right after finishing something in the same conversation, don't
-  base the suggestion on that task — that's the closing step's job, not
-  this one's.
+This review is invoked deliberately, on its own, and is **never** grounded
+in conversation context — not the current session's task, not what was
+just built, not "recent activity." Even when it happens to be asked right
+after finishing something in the same conversation, don't base the
+suggestion on that task.
 
 Instead, base every suggestion here on an actual pass over the **project
 repository itself**: (re-)read `CLAUDE.md` in full and check it against

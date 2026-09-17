@@ -14,8 +14,8 @@ reading it rather than for Claude executing it.
      directly, in whatever form you have them: a written ask, a numbered
      list, a pasted client transcript, an attached document (PDF, image,
      etc.), or several combined. Claude grounds each in that account's real
-     data and assembles a dashboard — new or existing — with a
-     documentation tab explaining it (see "Requirements Intake flow"
+     data and assembles a dashboard — new or existing — with an optional
+     documentation tab if you ask for one (see "Requirements Intake flow"
      below). This is the project's primary flow.
    - **Default Dashboard** — the standardized onboarding dashboard every
      Advanced Analytics client gets, built automatically (see "Default
@@ -73,12 +73,13 @@ reading it rather than for Claude executing it.
     (`click_behavior`) added wherever clicking into a summary value has an
     obvious, useful destination. A brand-new dashboard in the account's own
     collection gets pinned there.
-11. Claude adds a **documentation tab** to each dashboard touched — a new
-    tab containing only text cards (Metabase's markdown tile, not a
-    separate document): the dashboard's purpose, what each chart/metric
-    means in plain business language, and how to use its filters/
-    drill-downs — written for the people who'll actually read the
-    dashboard.
+11. Claude asks whether you'd like a documentation tab added (a plain
+    yes/no) — it's never added unprompted. If you say yes, it adds one to
+    each dashboard touched — a new tab containing only text cards
+    (Metabase's markdown tile, not a separate document): the dashboard's
+    purpose, what each chart/metric means in plain business language, and
+    how to use its filters/drill-downs — written for the people who'll
+    actually read the dashboard.
 
 ## Default Dashboard flow
 
