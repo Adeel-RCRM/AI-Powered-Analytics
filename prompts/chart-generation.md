@@ -88,8 +88,20 @@ using only fields that were actually discovered — never assumed schema.
      in the recommendation) — funnel for stage drop-off, line/area for
      trends over time, bar/stacked-bar for categorical comparisons, table
      for a list-style finding (e.g., "which jobs"), KPI for a single number.
+     Actively consider the fuller Metabase display catalog when it fits
+     better than a default bar/line/table: **treemap** (part-of-whole across
+     two hierarchy levels, e.g. deal value by company by stage), **sankey**
+     (flow between stages/sources, e.g. referral source into pipeline
+     stage), **box plot** (distribution/spread, e.g. time-to-hire by
+     recruiter), **scatter** (correlation between two measures), **map**
+     (any geo dimension), and **gauge** (a single metric against a fixed
+     target range) — these are already named in `prompts/drilldowns.md`'s
+     display list for drill-down wiring; this is where they should also be
+     actively considered as the chart type itself.
    - Keep it understandable to a business user: clear title, sensible axis
-     labels, no unnecessary complexity.
+     labels, no unnecessary complexity. **Assign series/category colors
+     explicitly per `references/visual-design-standards.md`** — never leave
+     color to Metabase's own automatic assignment.
    - **Format every value with its actual unit** — see CLAUDE.md "Value
      formatting" and `config/analysis-config.md`'s table of which field
      shapes are monetary vs. percent vs. duration vs. a plain count. A
@@ -147,7 +159,10 @@ Confirm it matches what was intended (query, display, name, collection).
    'Current Pipeline Stage', which ranks each candidate-job pair's stages
    and keeps the furthest one reached") — see CLAUDE.md "Query
    transparency". That dependency is never left for the user to notice on
-   their own.
+   their own. **If this card's underlying construction (joins, ranking/
+   summarize logic) is genuinely reusable beyond this one chart** — not a
+   true one-off — record it in `references/canonical-patterns.md` per that
+   file's "Adding a new pattern" section before moving on.
 9. Append one `chart_created` entry to `logs/history.jsonl` for this card
    (see CLAUDE.md "History log" for the exact schema).
 

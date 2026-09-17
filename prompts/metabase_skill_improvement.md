@@ -1,3 +1,14 @@
+**Historical / legacy.** This is a one-time bootstrapping prompt written for
+an earlier skill architecture (a separate `metabase-question-workflow` skill
+with its own 8-step SKILL.md) that predates this project's current
+CLAUDE.md-centric structure — it's what originally produced today's
+`references/schema-map.md` and `references/metric-glossary.md`. It's
+superseded by CLAUDE.md's own discovery → glossary → canonical-patterns
+flow (`prompts/discovery.md`, `prompts/chart-generation.md`,
+`references/canonical-patterns.md`) and isn't re-run as part of any current
+flow. Kept for reference only, not deleted, per this project's own
+never-silently-erase convention (see CLAUDE.md "Data discovery").
+
 ## The prompt (copy everything below into Claude Code)
 
 ```

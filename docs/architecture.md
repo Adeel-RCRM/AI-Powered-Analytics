@@ -1,5 +1,8 @@
 # Architecture
 
+See `docs/vision.md` for why this project exists and what it's aiming to
+become; this file covers the current structural shape and rationale.
+
 ## Shape
 
 ```
@@ -54,11 +57,11 @@ Ask which kind of work: Requirements Intake /
   |     (mb dashboard create / update, verified with mb dashboard get)   |
   |       |                                                              |
   |       v                                                              |
-  |     Ask: add a documentation tab? (plain yes/no) - if yes, new        |
-  |     dashboard tab, text-card dashcards only - card_id: null,          |
-  |     virtual_card.display: "text" - explaining the dashboard's         |
-  |     purpose, metrics, and how to use it, for its end users -          |
-  |     verified with mb dashboard get                                    |
+  |     Ask: add a companion documentation Document? (plain yes/no) - if  |
+  |     yes, a separate Metabase Document (native rich text + live        |
+  |     embedded charts, never a tab on the dashboard) explaining the     |
+  |     dashboard's purpose, metrics, and how to use it, for its end      |
+  |     users - verified with mb document get                             |
   +------------------------------------------------------------------------+
   |
   +-- Default Dashboard -----------------------------------------------+
@@ -93,8 +96,8 @@ Ask which kind of work: Requirements Intake /
   +--------------------------------------------------------------------+
   |
   v
-Every flow appends to logs/history.jsonl (local-only, git-ignored) and
-results are returned to the user in the terminal.
+Every flow appends to logs/history.jsonl (shared, git-committed,
+append-only) and results are returned to the user in the terminal.
 ```
 
 A `.claude/settings.json` hook enforces the history-log step for the
@@ -120,13 +123,14 @@ code instead (see `scripts/create_default_dashboard.py` and
 
 This project never deletes, archives, or modifies existing Metabase content
 it didn't create (hard constraint 7). The one exception: Requirements Intake
-may add new cards (and, if the user asks for one, a new documentation tab)
-to an **existing** dashboard — including one this project didn't create —
-when the user names that
+may add new cards to an **existing** dashboard — including one this project
+didn't create — when the user names that
 dashboard or confirms doing so after being asked (see CLAUDE.md "Dashboard
 destination"). Even there it stays additive: only ever add alongside what's
 already on the dashboard, never rearrange, resize, remove, or edit an
-existing tab, dashcard, or filter.
+existing tab, dashcard, or filter. A requested documentation Document is a
+separate new Metabase entity created alongside the dashboard, so it never
+touches the dashboard's own `tabs`/`dashcards` at all.
 
 ## Why Metabase CLI, not direct DB access
 
@@ -159,11 +163,16 @@ never `MAX(stage_date)`).
   `discovery.md` and `chart-generation.md` (shared by every flow),
   `requirements-intake.md` (Requirements Intake flow: stated ask / transcript
   / document, in any combination, through dashboard destination, assembly,
-  and an optional text-card documentation tab), and `infeasible-requirement.md`
+  and an optional companion documentation Document), `drilldowns.md` (the
+  full drill-down method), and `infeasible-requirement.md`
   (shared handling for a requirement the data can't support)
 - `references/` — `schema-map.md` (structural, metadata-only map of the core
-  tables) and `metric-glossary.md` (business-term definitions confirmed by
-  the user, per account) — checked before falling back to live discovery
+  tables), `metric-glossary.md` (business-term definitions confirmed by the
+  user, per account), `canonical-patterns.md` (reusable, verified chart/query
+  shapes), `schema-discrepancies.md` (a durable landing spot for a flagged
+  structural discrepancy not resolved in-session), and
+  `visual-design-standards.md` (the house color palette and consistency
+  conventions) — checked before falling back to live discovery
 - `config/analysis-config.md` — tunable defaults (data-quality thresholds,
   chart-type defaults)
 - `docs/workflow.md` — the same flows, written for a human teammate
@@ -183,6 +192,6 @@ never `MAX(stage_date)`).
 - `scripts/important_metrics_dashboard_template.json` — the fixed set of
   charts the Important Metrics Dashboard flow replicates onto each
   account's own data
-- `logs/history.jsonl` — local-only, git-ignored audit trail of what was
-  analyzed/recommended/created; enforced by hooks in `.claude/settings.json`
-  for the Requirements Intake flow
+- `logs/history.jsonl` — shared, git-committed, append-only audit trail of
+  what was analyzed/recommended/created; enforced by hooks in
+  `.claude/settings.json` for the Requirements Intake flow

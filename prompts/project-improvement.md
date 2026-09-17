@@ -32,12 +32,10 @@ a `references/*.md` entry that's gone stale against what a script or
 prompt now does, a script whose docstring no longer matches its own
 behavior, or a footgun/skip/failure that `logs/history.jsonl` shows
 actually happened but the rest of the repo doesn't yet account for.
-`logs/history.jsonl` is local-only and git-ignored (per CLAUDE.md's
-"History log"), so **always check whether it's actually present and
-non-empty on this machine before treating it as part of the pass** — a
-fresh checkout or a machine that hasn't run any workflows yet won't have
-one, and that's not itself a gap to report. When it exists, it and the
-existing entries in `references/project-improvements.md` are fair evidence
+`logs/history.jsonl` is git-committed and shared across the team (per
+CLAUDE.md's "History log") — read it in full as part of the pass. If it's
+empty (a genuinely new project with no workflows run yet), that's not itself
+a gap to report. It and the existing entries in `references/project-improvements.md` are fair evidence
 to pull into the pass (what's actually been built/skipped, what patterns
 keep recurring, what's already been flagged) — but they're inputs into a
 repo-wide check, never a substitute for actually reading the committed
@@ -46,6 +44,21 @@ their own.
 
 Never invent a suggestion from first principles without having actually
 looked at the current contents of the file(s) it's about.
+
+**Two checks run every time this review happens, not just when they happen
+to turn something up:**
+
+- **Metabase currency.** Diff `mb --help --json` and `mb skills list --json`
+  against what CLAUDE.md's "Before every session" paragraph documents —
+  note any bundled skill or command surface this project could use but
+  doesn't yet. Also spot-check whether CLAUDE.md's "Configuration
+  verification" `tokenFeatures` plan-gating snapshot is still current (a
+  plan can change independently of the server version).
+- **Memory-layer consistency.** Cross-check every account appearing in
+  `logs/history.jsonl` against `references/metric-glossary.md` — does each
+  one have a corresponding `## Account <n>` section? This is the exact check
+  that caught the 2026-09-15 gap (real chart work across ~10 accounts, zero
+  populated glossary sections) — run it every time, not just once.
 
 Once grounded, draw from whichever of these genuinely applies:
 
@@ -82,6 +95,10 @@ Once grounded, draw from whichever of these genuinely applies:
   Dashboard, or Important Metrics Dashboard — a question asked too often, a
   step that could be inferred instead of asked, a gate redundant with one
   earlier in the same flow.
+- **Metabase currency**: a bundled `mb` skill/command this project doesn't
+  yet use or document, a newer Metabase feature (chart type, dashboard
+  capability, AI feature) this project's prompts/scripts haven't accounted
+  for, or a stale `tokenFeatures`/plan-gating assumption in CLAUDE.md.
 
 ## Say it
 
@@ -119,9 +136,10 @@ marker, oldest first, one entry in this exact shape:
 - **Account**: the account this task was for, or `general` for a task not
   tied to one (e.g. a cross-account `mb` lookup, or a suggestion about the
   project's own files).
-- **Category**: one of the seven bullets above, kebab-cased
+- **Category**: one of the eight bullets above, kebab-cased
   (`robustness`, `better-alternatives`, `consistency`, `architecture`,
-  `time-token-efficiency`, `core-function-quality`, `workflow-friction`).
+  `time-token-efficiency`, `core-function-quality`, `workflow-friction`,
+  `metabase-currency`).
 - **Task**: one short phrase naming what was being done when this
   surfaced.
 - **Body** (indented line below): the exact suggestion as said to the

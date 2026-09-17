@@ -10,10 +10,12 @@ separate terminal ritual beyond the one-time `mb auth login` setup — that
 builds professional, functional, well-optimized, accurate charts and
 dashboards (with custom drill-downs and other Metabase-native features:
 filters, cross-filtering, tabs, etc.) against a Recruit CRM customer's actual
-analytics data (via Metabase), with an optional **documentation tab** — built
-from Metabase's own text cards, not a separate document, and added only when
-the user asks for one — explaining its purpose, its metrics, and how to use
-it, written for the end users who'll actually read the dashboard, not for a
+analytics data (via Metabase), with an optional companion **documentation
+Document** — built from Metabase's own native Documents feature (rich text
+with the dashboard's own charts embedded live), a separate Metabase entity
+alongside the dashboard rather than a tab on it, and added only when the
+user asks for one — explaining its purpose, its metrics, and how to use it,
+written for the end users who'll actually read the dashboard, not for a
 teammate debugging the query.
 
 What gets built is driven by whatever the user provides: a stated
@@ -25,6 +27,10 @@ processed; ask for a text transcript of it instead.**
 There is **no web UI, no backend server, no REST API, no database created by
 this project, and no dashboard application**. Do not build any of those. The
 "application" is this conversation.
+
+See `docs/vision.md` for why this project exists and what it's aiming to
+become — an aspirational companion to this file, never a source of operating
+rules itself.
 
 ## Hard constraints — do not violate
 
@@ -57,8 +63,7 @@ this project, and no dashboard application**. Do not build any of those. The
    script under `scripts/`.
 
    **One narrow, explicit exception:** the Requirements Intake flow may add
-   new dashcards (and, if the user asks for one, a new documentation tab) to
-   an **existing** dashboard —
+   new dashcards to an **existing** dashboard —
    including one this project did not create — when the user names that
    dashboard directly, or confirms doing so after being asked (see "Dashboard
    destination" below). This stays strictly additive even there: only ever
@@ -66,12 +71,27 @@ this project, and no dashboard application**. Do not build any of those. The
    rearrange, resize, rename, remove, or edit any tab, dashcard, or filter
    that already existed on it. Everything else in this constraint (no
    deleting, no archiving anything that isn't this project's own broken
-   output) still applies in full.
+   output) still applies in full. If the user also asks for documentation,
+   that's a separate new Document created alongside the dashboard (see
+   "Dashboard documentation" below) — never a change to the dashboard's own
+   `tabs`/`dashcards` at all.
 
-Before every session, load `mb skills get core` (and any specialized skill
-named in it, e.g. `mbql`, `dashboard`, `visualization`) if it isn't already
-fresh in context — command shapes and footguns live there, not here. Do not
-guess `mb` flag syntax; check `mb <command> --help` first.
+Before every session, load `mb skills get core` if it isn't already fresh in
+context — it routes to whichever specialized skill a task actually needs.
+Beyond the three already used everywhere in this file (`mbql`, `dashboard`,
+`visualization`), this project's own work also touches: `document` (Metabase's
+native Documents — rich text + embedded charts + comments), `metadata`
+(field/table semantic-type work, e.g. marking a foreign key so joins/linked
+filters work), and `native-sql` (parameterized SQL questions — the fallback
+path "Chart creation" below describes). Load whichever one a task touches; do
+not guess `mb` flag syntax — check `mb <command> --help` first.
+
+`git-sync` is also bundled (round-trips Metabase content — cards, dashboards,
+collections — with a git remote) and this instance has the underlying
+`remote_sync` capability enabled (see "Configuration verification" below),
+but this project doesn't use it yet — this Metabase instance isn't connected
+to a git remote for it. Worth evaluating deliberately as its own decision
+before this project relies on it for anything.
 
 ## Starting the workflow
 
@@ -109,9 +129,9 @@ options — this is what that tool is for, unlike Step 2's entity list below):
 Turns requirements the user states directly — as a written ask, a pasted
 transcript, an attached document (PDF, image, etc.), or any combination of
 these — into a dashboard (new or existing, one or several) grounded in that
-account's real data, with an optional documentation tab explaining it when
-the user asks for one. Follow `prompts/requirements-intake.md` for the full
-method — summary:
+account's real data, with an optional companion documentation Document
+explaining it when the user asks for one. Follow
+`prompts/requirements-intake.md` for the full method — summary:
 
 1. Ask exactly: "Which Recruit CRM account are these requirements for?
    Please provide the account number."
@@ -160,12 +180,12 @@ method — summary:
    that's the account's own collection (see "Where created charts live"
    below); an existing dashboard stays wherever it already lives — only
    ever *add* to it (see hard constraint 7's exception).
-10. Ask the user whether they'd like a documentation tab added (a plain
-    yes/no) — never build one unprompted. If yes, add it to each dashboard
-    touched in this step, containing text cards that explain its purpose,
-    metrics, and how to use it — per "Dashboard documentation" below. The
-    dashboard is now finalized: its cards, layout, filters, and (if
-    requested) documentation tab are in place.
+10. Ask the user whether they'd like a companion documentation Document
+    created (a plain yes/no) — never build one unprompted. If yes, create
+    one for each dashboard touched in this step — per "Dashboard
+    documentation" below. The dashboard is now finalized: its cards, layout,
+    and filters are in place (the Document is a separate Metabase entity,
+    not part of the dashboard itself).
 11. **Only once the dashboard is finalized**, ask the user whether to go
     ahead with drill-downs now (a plain yes/no confirmation) — never build
     them earlier in the same pass as the cards/layout above. Drill-downs
@@ -246,6 +266,17 @@ mb auth list --json
 Never read a raw API key out of `.env` and pass it around manually — `.env`
 exists so a human can run `scripts/mb-login.sh` once; after that, `mb`'s own
 profile store is the source of truth.
+
+**Before relying on any Metabase feature that might be plan-gated, confirm it
+against `mb auth list --json`'s `tokenFeatures` for the profile in use —
+never assume availability just because a feature exists in a newer Metabase
+version.** Checked 2026-09-17 on recruitcrm.metabaseapp.com (v1.63.16):
+`remote_sync` (git-sync), `library` (the Semantic Library), `schema-viewer`,
+and `dependencies` (automatic breaking-change checks) are **enabled**;
+`transforms-basic`/`transforms-python` (Data Studio Transforms) and
+`metabot-v3` (Metabot) are **not**. Re-check `tokenFeatures` rather than
+trusting this snapshot once it's old, since a plan can change independently
+of the server version.
 
 ## Locating the account's data
 
@@ -328,6 +359,30 @@ confirmed answer that only lives in this conversation's own context is lost
 the moment the session ends, which defeats the entire point of "ask once per
 account."
 
+**Every entry written to `references/metric-glossary.md` carries its own
+provenance, not just the confirmed value.** Append a `Source:`, a
+`Confirmed: <date>`, and a status tag to each entry — `asserted` (confirmed,
+nothing has since contradicted it) or `caveat` (a later session found a
+reason to doubt it — the mapped field no longer exists, the user gave a
+conflicting answer — and it needs reconfirming before the next chart relies
+on it). Get the real date with the same `TZ="Asia/Kolkata" date +...` command
+"History log" below uses. Example: `Currency: INR (Source: user-confirmed in
+chat; Confirmed: 2026-09-17; Status: asserted)`.
+
+**Never edit a confirmed entry in place when a later answer changes or
+contradicts it.** Append a dated `Superseded` note directly under the old
+line instead — old value, new value, why it changed — and flip the old
+line's status to `caveat` rather than deleting or rewriting it, the same
+append-only spirit `references/project-improvements.md`'s Open→Resolved
+entries already use. A future session should be able to see that a fact
+changed and why, not just its current value.
+
+Before reusing an older glossary entry that maps a business term to a
+specific field, a cheap check costs little: confirm the field still exists
+(`mb table fields`, metadata only — never sample its values) before trusting
+the mapping for a brand-new chart. If it's gone, flag it to the user and mark
+the entry `caveat` rather than silently building on a stale mapping.
+
 **`references/schema-map.md` is the opposite case — deliberately stable,
 manually curated, and never auto-updated mid-session.** If live discovery
 turns up something that looks like a genuinely new structural fact not
@@ -344,6 +399,14 @@ could have quietly drifted from what one earlier session happened to
 observe on one account. Custom (`cf`) fields and row counts stay excluded
 from it entirely either way, per that file's own "How to use this file"
 section.
+
+**If a flagged discrepancy isn't resolved in the same turn** (the user
+doesn't act on it immediately), don't let it evaporate when the session
+ends — append it to `references/schema-discrepancies.md` (date, account,
+what was observed, why it looks structural rather than account-specific,
+evidence) so a future deliberate edit to `schema-map.md` has accumulated
+evidence to draw on instead of relying on one session's one-off observation
+being remembered.
 
 ## Data quality gate
 
@@ -527,9 +590,11 @@ one:
    X") always wins over this default judgment call.
 
 **Updating an existing dashboard is additive-only**, per hard constraint 7's
-Requirements Intake exception: add the new cards (and a documentation tab,
-if the user asks for one) alongside what's already there — never rearrange,
-resize, remove, or edit an existing tab, dashcard, or filter on it.
+Requirements Intake exception: add the new cards alongside what's already
+there — never rearrange, resize, remove, or edit an existing tab, dashcard,
+or filter on it. A requested documentation Document is a separate new
+entity created alongside the dashboard (see "Dashboard documentation"
+below), so it never touches the dashboard's own `tabs`/`dashcards` at all.
 
 ### Drill-downs
 
@@ -568,8 +633,10 @@ a human confirming shapes against a UI-built example, wouldn't need to make.
   funnel, waterfall, sankey, gauge, progress, trend, number — plus table
   and pivot table when the query includes an aggregation/summarize step.
   Skip only: a KPI/scalar with no dashboard filter bound to it *and* no
-  dimension of its own, a card that's already the most granular view, or a
-  documentation-tab text card. Single-metric non-tabular displays get one
+  dimension of its own, or a card that's already the most granular view (a
+  documentation Document isn't a dashcard at all, per "Dashboard
+  documentation" below, so it was never in scope here). Single-metric
+  non-tabular displays get one
   dashcard-level `click_behavior`; multi-metric table/pivot displays get a
   **per-column** `click_behavior` per metric — except a `pivot` card,
   which can't reliably honor a per-column `click_behavior` at all and
@@ -741,87 +808,87 @@ spanning both conventions instead of one search.
 
 ## Dashboard documentation
 
-When the user asks for one, a dashboard the Requirements Intake flow
-creates or adds to gets a dedicated **documentation tab** — a new tab on
-that same dashboard containing only text cards (`card_id: null`,
-`visualization_settings.virtual_card.display: "text"` — see the `dashboard`
-and `visualization` skills), never a separate document. Written for the
-people who'll actually use the dashboard day-to-day, not for a teammate
-reading the query:
+When the user asks for one, a dashboard the Requirements Intake flow creates
+or adds to gets a companion **Document** — Metabase's native rich-text
+entity with live embedded charts (load the `document` skill for the exact
+TipTap/ProseMirror body shape) — a **separate Metabase object that sits
+alongside the dashboard, never a tab added to the dashboard itself.** Written
+for the people who'll actually use the dashboard day-to-day, not for a
+teammate reading the query:
 
-- **Purpose** — a text card explaining, in plain business language, why this
-  dashboard exists, tied back to the requirement(s) that drove it.
-- **What each chart means** — one text card per chart (or per closely
-  related group), explaining what a business user is looking at on the
-  dashboard's other tab(s) and why it matters — no jargon, no field names,
-  no SQL.
-- **How to use it** — a text card covering the dashboard's filters and any
-  drill-downs (see "Drill-downs" above): what a filter does, what happens
-  when you click into a bar/segment/KPI.
+- **Purpose** — a heading + paragraph explaining, in plain business
+  language, why this dashboard exists, tied back to the requirement(s) that
+  drove it. Include a `smartLink` (`model: "dashboard"`) near the top
+  pointing at the live dashboard so a reader can jump straight to it.
+- **What each chart means** — one section per chart (or per closely related
+  group): a heading naming it, a plain-language paragraph explaining what it
+  shows and why it matters (no jargon, no field names, no SQL), with the
+  chart itself **embedded live right next to the explanation**
+  (`cardEmbed`, wrapped in a `resizeNode` at a modest fixed height —
+  300-400px is usually enough — referencing the same card id already
+  created for the dashboard; see the `document` skill's "Embedding an
+  existing card"). This is the actual point of a Document over the old
+  text-only tab: the reader sees the explanation and the live chart
+  together, not a description of a chart they have to go find on another
+  tab.
+- **How to use it** — a section covering the dashboard's filters and any
+  drill-downs (see "Drill-downs" above) in plain terms: what a filter does,
+  what happens when you click into a bar/segment/KPI. A static document
+  can't demonstrate a click, so point back to the live dashboard via the
+  same `smartLink` for "try it yourself."
 
-Name the tab something a non-technical viewer reads clearly (e.g. "Guide" or
-"About this dashboard"). Add it as a genuinely **new** tab (a new entry in
-the dashboard's `tabs` array, with its text cards pointed at that tab's
-`dashboard_tab_id`) alongside whatever tab(s) the dashboard already has —
-never reorder, rename, or remove an existing tab, whether the dashboard was
-just created in this same operation or is a pre-existing one this flow is
-adding to (see "Dashboard destination" above).
+Name the Document **"<Dashboard Name> Guide"** so it's unambiguous alongside
+other content in the same collection. It lives in the same collection as the
+dashboard it documents (per "Where created charts live" below — the
+account's "Data Team WIP" sub-collection, or directly in the account's own
+collection alongside the dashboard) and gets `collection_position` set the
+same way the dashboard does, so it surfaces near it.
 
-Verify with `mb dashboard get <id> --json` after adding it — confirm the tab
-and its text cards landed as intended — and fold that confirmation into the
-same `dashboard_created`/`dashboard_updated` history-log entry (see "History
-log" below); the documentation tab isn't a separate created entity, so it
-doesn't get its own log-entry type. This is opt-in across every flow that
-can produce one — Requirements Intake included: build a documentation tab
-only when the user actually asks for one, never by default. The Default
-Dashboard and Important Metrics Dashboard flows are fixed,
-already-understood templates and follow the same rule.
+**Only embed cards that already exist** (a plain positive `id` in
+`cardEmbed`) — don't use the `document` skill's inline
+"create-brand-new-cards-atomically-with-the-document" path here, since every
+chart card must already exist, be verified, and be logged per
+`prompts/chart-generation.md` before it's referenced anywhere.
 
-**Size every text card to its actual content — never reach for a fixed
-`size_y` out of habit.** The `dashboard` skill's default `text` size
-(12×3) is a generic starting point, not a target to match regardless of
-how much text a given card actually holds — a card sized for far more text
-than it contains renders as a wall of empty space below a couple of
-sentences, and a documentation tab's text cards, chosen per-content, are
-exactly where this bites hardest (confirmed as an actual gap on account
-44663's Sourcing Report "Guide" tab). Size `size_y` from the content, not
-the other way around:
+Because a Document is a wholly separate entity, creating one for an
+**existing** dashboard never touches that dashboard's own `tabs`/`dashcards`
+at all — it sidesteps the entire class of "whole-array-replace" risk
+`prompts/drilldowns.md`'s gotchas log warns about for dashboard updates (a
+tab silently dropped by an update that didn't carry it forward).
 
-1. Count the card's actual rendered **lines**, not characters: a `###`
-   heading is 1 line; a paragraph or bullet only wraps to a second line if
-   it's genuinely long relative to the card's `size_x` (roughly 250+
-   characters at `size_x: 24`, i.e. full dashboard width — most single
-   sentences and bullets won't wrap at all at that width, so don't assume
-   they will); count each bullet, each subheading (`**Bold Label**` on its
-   own line), and each blank line separating blocks as its own line.
-2. Convert lines to grid rows at roughly **2 text lines per `size_y` unit**
-   (a heading line runs taller — closer to 1 unit on its own) — then add
-   **1 row of padding** for top/bottom margin inside the card. A
-   heading-only card (the `heading` display, not `text`) stays at its
-   documented default `24×1`; don't apply this formula there.
-3. Treat the result as a close estimate, not an exact pixel measurement —
-   Metabase doesn't expose a text-measurement API, so there's no way to
-   verify the rendered height without opening the dashboard. Err slightly
-   smaller rather than larger when in doubt: a card a little tight can
-   still be read in full by scrolling within it, but a card that's too
-   tall is exactly the visible whitespace problem this rule exists to fix.
-4. **After resizing a card, re-pack the `row` values of every card below
-   it on the same tab** so shrinking one card doesn't leave a gap where it
-   used to end — Metabase doesn't auto-reflow the grid, so a resized card
-   with untouched sibling `row`s just moves the empty space instead of
-   removing it.
+Verify with `mb document get <id> --full --json` after creating it — confirm
+the headings, embedded cards, and smart link landed as intended — and fold
+that confirmation into the same `dashboard_created`/`dashboard_updated`
+history-log entry (see "History log" below) as `documentation_doc_id` /
+`documentation_doc_name`; it isn't logged as its own separate entry type.
+This is opt-in across every flow that can produce one — Requirements Intake
+included: create a documentation Document only when the user actually asks
+for one, never by default. The Default Dashboard and Important Metrics
+Dashboard flows are fixed, already-understood templates and follow the same
+rule.
+
+Keep each `resizeNode` height modest and each explanatory paragraph short —
+a Document scrolls, so there's no fixed-grid whitespace problem the way an
+undersized/oversized dashboard text card once had, but a wall of prose is
+still worse than a few tight sentences per chart.
 
 ## History log
 
-Every workflow in this project appends to a local history log at
+Every workflow in this project appends to a shared history log at
 `logs/history.jsonl` — one JSON object per line, newline-delimited,
-append-only. This is a **local-only** audit trail (which accounts were
-analyzed, what was recommended, what was actually created and when) — it is
-git-ignored on purpose: each teammate's log stays on their own machine and
-is never pushed/shared/merged with anyone else's. It's local project data,
-not Metabase content, so it isn't subject to hard constraint 7, but the same
-"never fabricate" rule applies: only log what actually happened, with real
-ids/timestamps.
+append-only, and **git-committed** so every teammate's work lands in the same
+file (which accounts were analyzed, what was recommended, what was actually
+created and when). It's local project data, not Metabase content, so it
+isn't subject to hard constraint 7, but the same "never fabricate" rule
+applies: only log what actually happened, with real ids/timestamps.
+
+Because every entry is a self-contained, independent JSON line and nothing
+here is ever edited or reordered, concurrent appends from different
+teammates merge cleanly — pull the latest history before appending so a new
+line lands after the current last one, and on the rare occasion git still
+reports a conflict here, resolve it by keeping **both** sides' lines, never
+dropping one — every line is independent, so there's never a real reason to
+choose between them.
 
 Get the timestamp with `TZ="Asia/Kolkata" date +"%Y-%m-%dT%H:%M:%S+05:30"`
 (real wall-clock time, in Indian Standard Time — never UTC, never invent one).
@@ -845,20 +912,20 @@ Append an entry at these points:
   ```json
   {"timestamp": "2026-08-19T05:15:00+05:30", "type": "chart_created", "account": "662", "collection_mode": "account_collection", "recommendation_rank": 1, "card_id": 70801, "name": "...", "chart_type": "bar", "collection_id": 24521}
   ```
-- **After a dashboard (and its documentation tab, if the user asked for one)
-  is assembled and verified** (`prompts/requirements-intake.md`'s "Assemble
-  the dashboard(s)" and "Add the documentation tab" steps): one
-  `dashboard_created` entry for a brand-new dashboard, or one
-  `dashboard_updated` entry when adding to an existing one (per "Dashboard
-  destination" in CLAUDE.md). One entry per dashboard touched — a request
-  that splits across multiple new dashboards gets one `dashboard_created`
-  entry each. Omit the `documentation_tab`/`documentation_tab_added` field
-  when no tab was requested.
+- **After a dashboard (and its companion documentation Document, if the user
+  asked for one) is assembled and verified**
+  (`prompts/requirements-intake.md`'s "Assemble the dashboard(s)" and "Add
+  the documentation Document" steps): one `dashboard_created` entry for a
+  brand-new dashboard, or one `dashboard_updated` entry when adding to an
+  existing one (per "Dashboard destination" in CLAUDE.md). One entry per
+  dashboard touched — a request that splits across multiple new dashboards
+  gets one `dashboard_created` entry each. Omit `documentation_doc_id`/
+  `documentation_doc_name` when no Document was requested.
   ```json
-  {"timestamp": "2026-08-19T05:18:00+05:30", "type": "dashboard_created", "account": "662", "collection_mode": "account_collection", "dashboard_id": 19200, "collection_id": 24521, "cards_included": [70801, 70802, 70803], "documentation_tab": "Guide"}
+  {"timestamp": "2026-08-19T05:18:00+05:30", "type": "dashboard_created", "account": "662", "collection_mode": "account_collection", "dashboard_id": 19200, "collection_id": 24521, "cards_included": [70801, 70802, 70803], "documentation_doc_id": 266, "documentation_doc_name": "Sourcing Report Guide"}
   ```
   ```json
-  {"timestamp": "2026-08-19T05:19:00+05:30", "type": "dashboard_updated", "account": "662", "collection_mode": "data_team_wip", "dashboard_id": 4501, "cards_added": [70810, 70811], "documentation_tab_added": "Guide"}
+  {"timestamp": "2026-08-19T05:19:00+05:30", "type": "dashboard_updated", "account": "662", "collection_mode": "data_team_wip", "dashboard_id": 4501, "cards_added": [70810, 70811], "documentation_doc_id": 267, "documentation_doc_name": "Owner Activity Guide"}
   ```
 - **After a Default Dashboard run** (`scripts/create_default_dashboard.py`
   appends this itself — see the script): one `default_dashboard_created` (or
@@ -876,9 +943,13 @@ Append an entry at these points:
   {"timestamp": "2026-08-19T05:25:00+05:30", "type": "important_metrics_dashboard_created", "account": "662", "collection_mode": "account_collection", "dashboard_id": 19180, "collection_id": 24521, "cards_collection_id": 24611, "models_collection_id": 24612, "drilldowns_collection_id": 24613, "charts_collection_id": 24610, "cards_created": 18, "cards_skipped": [], "profile": "recruitcrm"}
   ```
 A project-improvement suggestion (per "Project improvement review" below)
-is **not** logged here — it's committed, shared team backlog, not a local
-per-machine audit trail, so it lands in `references/project-improvements.md`
-instead (see `prompts/project-improvement.md`'s "Log it" step).
+is **not** logged here — this file is an event/audit log of what was
+actually built for a client account, not a place for process suggestions
+about the project itself; those land in `references/project-improvements.md`
+instead (see `prompts/project-improvement.md`'s "Log it" step). Both files
+are git-committed and shared across the team — the split between them is
+about content (what happened for a client vs. a suggestion about the
+project), not about who can see it.
 
 Any other genuinely useful event (e.g. an account that couldn't be located,
 an analysis that had to be skipped for insufficient data) is fine to log too
@@ -1179,10 +1250,10 @@ suggestion grounded in an actual pass over the project's own files —
 grounded in this conversation's own task and never a generic checklist
 item, then log it to
 `references/project-improvements.md` per that prompt's "Log it" step so it
-becomes part of a standing, **team-shared** backlog — unlike
-`logs/history.jsonl`, this file is committed, so a suggestion any
-teammate's session surfaces is visible to everyone, not just on the
-machine that ran it.
+becomes part of a standing, **team-shared** backlog — a suggestion any
+teammate's session surfaces is visible to everyone, the same as
+`logs/history.jsonl`'s own event entries are now that both files are
+git-committed.
 
 ## Style
 

@@ -1,11 +1,13 @@
 # Project improvement backlog
 
 Suggestions surfaced while doing real work in this project — one entry per
-task, per `prompts/project-improvement.md`'s "Log it" step. **Committed
-and shared**, unlike `logs/history.jsonl` (which is local-only,
-git-ignored, per-machine): the point of this file is that a rough edge one
-teammate's session hits becomes visible to everyone, not just rediscovered
-independently session after session.
+task, per `prompts/project-improvement.md`'s "Log it" step. Committed and
+shared, same as `logs/history.jsonl`: the point of this file is that a
+rough edge one teammate's session hits becomes visible to everyone, not
+just rediscovered independently session after session. The two files split
+by content, not by visibility — this one is a process-improvement backlog
+about the project itself, `logs/history.jsonl` is an event log of what was
+built for a client account.
 
 This is a backlog, not a changelog — an entry landing here is not itself
 an action taken. Turning one into a real change to `prompts/`,
@@ -25,6 +27,9 @@ on what changed (or why it was declined) and the date.
   a plain count — worth skipping it until a monetary field is actually
   about to be formatted.
 -->
+
+- 2026-09-17 — account 92840 — core-function-quality — Owner Activity dashboard, week/month/year breakdown gap
+  Neither `prompts/requirements-intake.md` nor `prompts/chart-generation.md` says a "broken down by week/month/year" (or general "trend over time") requirement needs (a) a date breakout in the query grain and (b) a `temporal-unit` dashboard parameter mapped to it — the exact pattern already live on card 75181 / dashboard 18713 ("Executive Summary"). Without that rule, resolution had nothing telling it to reach for Metabase's native time-grouping filter, so the six Owner Activity cards got built as flat "metric by owner" bars with no time dimension at all, despite the client asking for it on the 2026-09-10 call. Worth adding this as a named canonical pattern — in `references/canonical-patterns.md` once it exists, or a dedicated subsection of `chart-generation.md` until then — that resolution explicitly checks for whenever a requirement mentions a time grain or "trend".
 
 ## Resolved
 

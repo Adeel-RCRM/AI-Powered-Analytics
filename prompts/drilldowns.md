@@ -25,8 +25,9 @@ built earlier in the same session can still change shape before the user
 is done (a filter added, a join adjusted, a column renamed), and a
 drill-down built against an intermediate version of it silently drifts out
 of sync the moment the report changes again. So: finish assembling the
-dashboard (cards placed, layout, filters/parameters, documentation tab —
-see step 9-10 of the "Requirements Intake flow" in CLAUDE.md), consider it
+dashboard (cards placed, layout, filters/parameters, and its companion
+documentation Document if one was requested — see step 9-10 of the
+"Requirements Intake flow" in CLAUDE.md), consider it
 finalized, **then** ask the user for a plain yes/no confirmation before
 building any drill-downs, and only then work through the rest of this
 section against each report card's now-final construction.
@@ -48,7 +49,7 @@ aggregation/summarize step** — a plain unaggregated record list has no
 project assembles or adds to is never exempt from this list by omission —
 if a card's `display` is one of these and it lacks a `click_behavior`
 after the "skip it" carve-out is checked and doesn't apply, that is a gap
-to fix, the same as a missing chart or a missing documentation tab.
+to fix, the same as a missing chart.
 Single-metric, non-tabular displays (treemap, pie, gauge, progress, trend,
 number, map, box plot, funnel, waterfall, sankey) get **one dashcard-level
 `click_behavior`** covering the whole chart (there's no per-column
@@ -67,10 +68,11 @@ have their own genuinely-more-detailed drill target available.
 - Skip it where it adds nothing: a KPI/scalar with genuinely no natural
   drill target (no dashboard filter is bound to it *and* it has no
   dimension of its own — see "Single-metric, non-tabular chart
-  click_behavior" below before assuming this is the case), a card that's
-  already the most granular view on the dashboard, or a text card on the
-  documentation tab (see CLAUDE.md "Dashboard documentation") — those never
-  carry a `click_behavior`.
+  click_behavior" below before assuming this is the case), or a card that's
+  already the most granular view on the dashboard. (A companion
+  documentation Document, per CLAUDE.md "Dashboard documentation", is a
+  separate Metabase entity, not a dashcard at all, so it's outside this
+  section's scope entirely.)
 - Only point a drill-down at content this project actually created (this
   session or a prior one) or content the user has explicitly named as a
   destination — never guess at an existing dashboard/question to link to.
@@ -509,9 +511,9 @@ navigate to it:
    as for any other drill-down).
 2. Create a **new dashboard** dedicated to hosting these cards — named for
    the pivot (e.g. "`<Pivot card name>` Drill-down") — and add one dashcard
-   per metric card onto it (a simple grid layout; no documentation tab
-   needed, this dashboard is drill-down plumbing, not a client-facing
-   report in its own right).
+   per metric card onto it (a simple grid layout; no companion documentation
+   Document needed, this dashboard is drill-down plumbing, not a
+   client-facing report in its own right).
 3. Give this new dashboard its own **filter parameters, one per dimension
    the pivot groups by** (e.g. a Job filter, a Source filter, a Company
    filter if the pivot breaks out by all three) — mapped onto the matching

@@ -137,6 +137,8 @@ in this shape:
 
 **Currency:** USD (confirmed 2026-09-17).
 
+**Revenue-credited time axis (confirmed 2026-09-17):** when breaking down "Revenue Credited by Team Member" by week/month/year, use `deals_92840.close_date` (revenue recognized when the deal closed/won) — not `created_on` (deal-record-creation date).
+
 ## Unattributed (predates per-account structure — reconfirm before use)
 
 These mappings were recorded before this file separated answers by account.

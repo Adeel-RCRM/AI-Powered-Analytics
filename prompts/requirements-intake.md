@@ -1,7 +1,7 @@
 # Requirements Intake
 
 Goal: build a dashboard (new or existing, one or several), with an optional
-documentation tab when the user asks for one, from requirements the user
+companion documentation Document when the user asks for one, from requirements the user
 states directly — as a written ask, a pasted
 transcript, an attached document (PDF, image, etc.), or any combination of
 these — check known reference material and canonical patterns first, ask
@@ -77,14 +77,22 @@ visibility into the pipeline" with no further detail), don't guess a
 specific interpretation — note it as an open question to ask the user about
 rather than picking one arbitrarily.
 
+**Some requests aren't a chart at all.** "Email me this dashboard every
+Monday" or "alert me when placements drop below X" is a delivery-schedule
+need, not a new chart — route it to the `notification` skill
+(`mb subscription`/`mb alert`) instead of drafting a chart recommendation
+for it, and call this out separately when presenting results (per "Output
+format" below).
+
 ## Resolving each requirement
 
 For each requirement, in this order:
 
-1. **Check for a known pattern first.** If `references/canonical-patterns.md`
-   exists in this repo, check it for a chart shape that matches before doing
-   anything else. A match tells you the tables/join/grain/chart type
-   directly — treat rediscovery as unnecessary in that case.
+1. **Check for a known pattern first.** Check `references/canonical-patterns.md`
+   for a chart shape that matches before doing anything else — a match tells
+   you the tables/join/grain/chart type directly, so treat rediscovery as
+   unnecessary in that case. It may have nothing recorded yet for a
+   genuinely new pattern; that's expected, not a gap.
 2. **Check reference material next.** If `references/schema-map.md` and/or
    `references/metric-glossary.md` exist, use them to resolve table/column
    choices and business-term definitions (e.g. "active candidate," "placed,"
@@ -97,12 +105,11 @@ For each requirement, in this order:
    overrides whatever field merely sounds like the best semantic fit or has
    the cleanest data.
 3. **Fall back to live discovery** exactly as `prompts/discovery.md`
-   describes whenever no reference file covers what's needed —
-   `references/schema-map.md` and `references/metric-glossary.md` exist
-   today; `references/canonical-patterns.md` does not yet (see
-   `prompts/metabase_skill_improvement.md` for how to build it). A
-   requirement not covered by any reference file goes through this
-   fallback at full rigor, same as any other discovery.
+   describes whenever no reference file covers what's needed. A requirement
+   not covered by any reference file goes through this fallback at full
+   rigor, same as any other discovery — and per `prompts/chart-generation.md`
+   step 8, a genuinely reusable result feeds back into
+   `references/canonical-patterns.md` once it's built and verified.
 4. **Group by shared entity/model** when several requirements arrive at
    once — work out shared query/model logic once rather than per chart.
 5. Check for duplicates the same way as CLAUDE.md's "Avoiding duplicate
@@ -268,39 +275,61 @@ Then, on that dashboard:
    destination case applied (new vs. existing, and why, per "Choose the
    dashboard destination" above).
 
-## Add the documentation tab (only if the user asks for one)
+## Add the documentation Document (only if the user asks for one)
 
-Ask the user whether they'd like a documentation tab (a plain yes/no) before
-building one — never add it unprompted. If the user declines for a given
-dashboard, skip straight to "Logging" below for that dashboard — its cards,
-layout, and filters from "Assemble the dashboard(s)" are already finalized
-without it.
+Ask the user whether they'd like a companion documentation Document (a plain
+yes/no) before building one — never add it unprompted. If the user declines
+for a given dashboard, skip straight to "Logging" below for that
+dashboard — its cards, layout, and filters from "Assemble the dashboard(s)"
+are already finalized without it.
 
-If they say yes, add one more tab to each dashboard just created or added
-to, containing only text cards (per CLAUDE.md "Dashboard documentation"):
+If they say yes, create one Metabase **Document** per dashboard just created
+or added to (per CLAUDE.md "Dashboard documentation" — load the `document`
+skill for the exact TipTap/ProseMirror body shape). This is a **separate
+Metabase entity, not a tab on the dashboard** — it never touches the
+dashboard's own `tabs`/`dashcards`, which matters especially when adding to
+an **existing** dashboard (no risk of the whole-array-replace gotcha
+`prompts/drilldowns.md` warns about for dashboard updates):
 
-1. Add a new entry to the dashboard's `tabs` array (negative id for a new
-   tab, e.g. "Guide" or "About this dashboard") — never touching any tab
-   that already exists on it.
-2. Add text dashcards to that tab (`card_id: null`,
-   `visualization_settings: {virtual_card: {display: "text"}, text:
-   "<markdown>"}`, `dashboard_tab_id` pointed at the new tab):
-   - A **Purpose** card — why this dashboard exists, tied to the
-     requirement(s) that drove it.
-   - One card per chart (or closely related group) — what a business user
-     is looking at on the other tab(s), and why it matters. Plain language,
-     no field names, no SQL.
-   - A **How to use it** card — the dashboard's filters, and any
+1. Name it **"<Dashboard Name> Guide"**, in the same collection as the
+   dashboard it documents (per "Where created charts live" in CLAUDE.md),
+   with `collection_position` set the same way the dashboard's is.
+2. Build the body:
+   - A **Purpose** section (heading + paragraph) — why this dashboard
+     exists, tied to the requirement(s) that drove it — with a `smartLink`
+     (`model: "dashboard"`) near the top pointing at the live dashboard.
+   - One section per chart (or closely related group) — a heading, a
+     plain-language paragraph (no field names, no SQL) explaining what it
+     shows and why it matters, and the chart itself embedded live right
+     next to it (`cardEmbed` referencing the same card id already created,
+     wrapped in a `resizeNode` at a modest height — 300-400px).
+   - A **How to use it** section — the dashboard's filters, and any
      drill-downs from "Assemble the dashboard(s)" step 3, explained in
-     plain terms.
-3. Send this as part of the same `mb dashboard update` (or the initial `mb
-   dashboard create` body, if the dashboard is brand new) that added the
-   chart dashcards — whole-array replace semantics mean the tab and its
-   text cards belong in the same `tabs`/`dashcards` arrays as everything
-   else.
-4. Verify with `mb dashboard get <id> --json` — confirm the new tab and its
-   text cards landed as intended.
-5. Report the tab's name back to the user alongside the dashboard id/link.
+     plain terms, pointing back to the live dashboard (via the same
+     `smartLink`) for "try it yourself."
+3. Only embed cards that already exist (a plain positive `id` in
+   `cardEmbed`) — don't use the `document` skill's inline
+   create-new-cards-with-the-document path; every chart card here was
+   already built, verified, and logged per `prompts/chart-generation.md`.
+4. `mb document create --file ... --json` (or `mb document update` if
+   revising one already created this session).
+5. Verify with `mb document get <id> --full --json` — confirm the headings,
+   embedded cards, and smart link landed as intended.
+6. Report the Document's id/name back to the user alongside the dashboard
+   id/link.
+
+## Final recap — confirm everything actually landed
+
+Before logging and wrapping up, list every business-term/schema fact
+confirmed anywhere in this session (currency, hiring-stage order, a field
+mapping, a term clarification) and re-read `references/metric-glossary.md`
+to confirm each one is actually present under this account's `## Account
+<n>` section — don't just trust that the earlier same-turn write happened.
+This exists because it's already failed silently once on this project (real
+chart work across ~10 accounts with zero corresponding glossary sections,
+per `references/project-improvements.md`'s 2026-09-15 entry) — a cheap
+re-read here catches a missed write before the session ends, when it's still
+fixable in the same turn instead of lost.
 
 ## Logging
 
@@ -312,5 +341,5 @@ takes it:
   `"transcript"`, `"document"`, in any combination).
 - One `chart_created` entry per card actually created.
 - One `dashboard_created` entry per brand-new dashboard assembled (including
-  its documentation tab, if the user asked for one), or one
-  `dashboard_updated` entry per existing dashboard added to.
+  its companion documentation Document's id/name, if the user asked for
+  one), or one `dashboard_updated` entry per existing dashboard added to.

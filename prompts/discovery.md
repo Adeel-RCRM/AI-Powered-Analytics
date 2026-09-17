@@ -91,6 +91,13 @@ row count/cardinality never goes into it either way — both are explicitly
 account-specific and excluded by that file's own "How to use this file"
 section.
 
+**If the user doesn't resolve the discrepancy in the same turn**, don't let
+it disappear when the session ends — append it to
+`references/schema-discrepancies.md` (date, account, what was observed, why
+it looks structural rather than account-specific, evidence) so a later,
+deliberate edit to `schema-map.md` has accumulated evidence instead of
+depending on someone remembering one session's one-off observation.
+
 ## 4. Where value/data questions actually get resolved
 
 A field's *name* and *type* are metadata (covered above). A field's actual
@@ -122,6 +129,18 @@ moving on to build the chart.** Don't hold it in conversation context to
 write back "later" or "at the end" — that's exactly how a confirmed answer
 gets lost once the session ends, and the next session (or the next
 requirement in this one) re-asks something already settled.
+
+Write the entry with its provenance, not just the value — a `Source:`, a
+`Confirmed: <date>`, and a status tag (`asserted` or `caveat`), per
+CLAUDE.md's "Data discovery" section. If this answer contradicts one already
+in the file, don't edit the old line — append a dated `Superseded` note under
+it (old value, new value, why) and flip the old line to `caveat`.
+
+Before trusting an *older* glossary entry that maps a business term to a
+specific field (rather than one just confirmed this turn), a cheap check is
+worth it first: confirm the field still exists (`mb table fields` — metadata
+only, never sample its values). If it's gone, flag it to the user and mark
+the entry `caveat` instead of silently building on a stale mapping.
 
 Watch for structural (not data) red flags instead: a status/stage column
 with a generic name suggesting it might be unused, an owner/recruiter field

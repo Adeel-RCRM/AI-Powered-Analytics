@@ -15,8 +15,8 @@ reading it rather than for Claude executing it.
      list, a pasted client transcript, an attached document (PDF, image,
      etc.), or several combined. Claude grounds each in that account's real
      data and assembles a dashboard — new or existing — with an optional
-     documentation tab if you ask for one (see "Requirements Intake flow"
-     below). This is the project's primary flow.
+     companion documentation Document if you ask for one (see "Requirements
+     Intake flow" below). This is the project's primary flow.
    - **Default Dashboard** — the standardized onboarding dashboard every
      Advanced Analytics client gets, built automatically (see "Default
      Dashboard flow" below).
@@ -73,12 +73,13 @@ reading it rather than for Claude executing it.
     (`click_behavior`) added wherever clicking into a summary value has an
     obvious, useful destination. A brand-new dashboard in the account's own
     collection gets pinned there.
-11. Claude asks whether you'd like a documentation tab added (a plain
-    yes/no) — it's never added unprompted. If you say yes, it adds one to
-    each dashboard touched — a new tab containing only text cards
-    (Metabase's markdown tile, not a separate document): the dashboard's
-    purpose, what each chart/metric means in plain business language, and
-    how to use its filters/drill-downs — written for the people who'll
+11. Claude asks whether you'd like a companion documentation Document
+    created (a plain yes/no) — it's never added unprompted. If you say yes,
+    it creates one per dashboard touched — a separate Metabase Document
+    (native rich text with the dashboard's own charts embedded live, not a
+    tab on the dashboard itself): the dashboard's purpose, what each
+    chart/metric means in plain business language next to the live chart,
+    and how to use its filters/drill-downs — written for the people who'll
     actually read the dashboard.
 
 ## Default Dashboard flow
@@ -124,8 +125,8 @@ reading it rather than for Claude executing it.
 
 If at any point the account can't be found, the data is too thin/dirty for a
 given analysis, or Metabase can't be reached, Claude will say so directly
-rather than inventing results. Every flow appends an entry to the local,
-git-ignored `logs/history.jsonl` audit trail; for the Requirements Intake
+rather than inventing results. Every flow appends an entry to the shared,
+git-committed `logs/history.jsonl` audit trail; for the Requirements Intake
 flow this is enforced by a Claude Code hook that flags the session if a
 card was created or a dashboard was created/updated but never logged. The
 Default Dashboard and Important Metrics Dashboard scripts log themselves in

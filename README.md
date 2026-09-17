@@ -4,13 +4,16 @@ A workflow driven entirely by talking to Claude directly in VS Code — no web
 UI, no backend, no database of its own — that uses Claude + the Metabase CLI
 (`mb`) to build professional, well-optimized charts and dashboards (with
 custom drill-downs and other Metabase-native features) against a Recruit CRM
-customer's actual analytics data, with an optional documentation tab (built
-from Metabase's own text cards, not a separate document) added to a
-dashboard when asked, explaining it for the people who'll actually use it.
+customer's actual analytics data, with an optional companion documentation
+Document (Metabase's own native rich-text + live-embedded-charts feature, a
+separate entity alongside the dashboard, not a tab on it) created when
+asked, explaining it for the people who'll actually use it.
 
 Everything happens by talking to Claude in VS Code — describe what you need
 (a stated requirement, a pasted transcript, an attached PDF/image, or several
 combined) and Claude builds it. There is nothing to `npm install` or `run`.
+
+See `docs/vision.md` for the project's longer-term aspiration.
 
 ## Prerequisites
 
@@ -68,8 +71,8 @@ Claude will then:
    numbered list, a pasted client transcript, an attached document (PDF,
    image, etc.), or several combined — and Claude grounds each in that
    account's real data and assembles a dashboard, new or existing, with an
-   optional documentation tab when you ask for one; this project's primary
-   flow),
+   optional companion documentation Document when you ask for one; this
+   project's primary flow),
    **Default Dashboard** (the standardized onboarding dashboard every
    account gets, built automatically), or **Important Metrics Dashboard**
    (the standardized hiring-efficiency dashboard every account gets, also
@@ -83,9 +86,10 @@ genuinely ambiguous, and presents a numbered list of buildable charts before
 asking which to create. Once confirmed, it decides where they land — a
 dashboard you named, an existing dashboard it asks you about if one plausibly
 already covers the same ground, or one or more new dashboards otherwise —
-assembles the charts there with drill-downs, and, if you ask for one, adds a
-documentation tab (built from Metabase's own text cards) explaining the
-dashboard for its end users. Audio/video sources aren't processed directly —
+assembles the charts there with drill-downs, and, if you ask for one, creates
+a companion documentation Document (Metabase's native rich text with the
+dashboard's own charts embedded live) explaining the dashboard for its end
+users. Audio/video sources aren't processed directly —
 Claude will ask for a text transcript instead, since this project has no
 transcription capability.
 
@@ -121,17 +125,24 @@ prompts/
   chart-generation.md        Create + verify one card in Metabase
   requirements-intake.md     Requirements Intake: stated ask / transcript / document (any
                               combination) -> grounded chart candidates -> dashboard
-                              (new or existing), optionally with a text-card
-                              documentation tab
+                              (new or existing), optionally with a companion
+                              documentation Document
+  drilldowns.md              Full drill-down method: click_behavior shapes, gotchas, completion audit
   infeasible-requirement.md  How to handle a requirement the account's real data can't support
-  metabase_skill_improvement.md  Prompt for building references/ (schema map, metric glossary,
-                              canonical patterns) that Requirements Intake checks first once built
+  project-improvement.md     On-demand review of the project's own files for drift/gaps
+  metabase_skill_improvement.md  Legacy bootstrapping prompt from an earlier skill architecture (see its
+                              own header note) — superseded by CLAUDE.md's discovery/glossary/
+                              canonical-patterns flow
 docs/
   architecture.md            System shape and rationale
   workflow.md                Human-readable walkthrough of all three flows
 references/
   schema-map.md              Structural (metadata-only) map of the 12 core Recruit CRM tables
   metric-glossary.md         Business-term definitions confirmed by the user, per account
+  canonical-patterns.md      Reusable, verified chart/query shapes
+  schema-discrepancies.md    Durable landing spot for a flagged structural discrepancy
+  visual-design-standards.md House color palette and dashboard consistency conventions
+  project-improvements.md    Team-shared backlog of process/consistency suggestions
 scripts/
   mb-login.sh                                    One-time helper: .env -> mb auth login
   create_default_dashboard.py                    Automates the Default Dashboard flow end-to-end
@@ -139,7 +150,7 @@ scripts/
   create_important_metrics_dashboard.py          Automates the Important Metrics Dashboard flow end-to-end
   important_metrics_dashboard_template.json      Fixed chart set the Important Metrics Dashboard flow replicates
 logs/
-  history.jsonl              Local-only, git-ignored audit trail (see CLAUDE.md "History log")
+  history.jsonl              Shared, git-committed, append-only audit trail (see CLAUDE.md "History log")
 ```
 
 ## Security

@@ -33,6 +33,14 @@ Never assume all of these exist for a given account — confirm via
 - Single headline number → KPI
 - List of specific records needing follow-up (e.g., stalled jobs) → Table
 - Relationship between two continuous measures → Scatter
+- Part-of-whole across two hierarchy levels (e.g. deal value by company by
+  stage) → Treemap
+- Flow between stages/sources (e.g. referral source into pipeline stage) →
+  Sankey
+- Distribution/spread across categories (e.g. time-to-hire by recruiter) →
+  Box plot
+- Any geo dimension → Map
+- A single metric against a fixed target range → Gauge
 
 ## Value formatting (CLAUDE.md "Value formatting")
 
@@ -59,6 +67,13 @@ what the field/measure actually is, not by name-pattern-matching alone:
 When unsure which bucket a field falls into, treat it as a plain number
 rather than guessing at a unit — an unformatted number is a smaller error
 than a wrongly-labeled one.
+
+## Color (`references/visual-design-standards.md`)
+
+Series/category colors, sequential/diverging range formatting, and status
+colors are governed by `references/visual-design-standards.md`, not chosen
+per chart — assign them per that file rather than leaving color to
+Metabase's own automatic assignment.
 
 ## Data labels (CLAUDE.md "Data labels")
 
