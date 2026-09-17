@@ -99,7 +99,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "call_logs"
+      }
     },
     {
       "key": "total_cost_of_calls",
@@ -167,7 +171,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "call_logs"
+      }
     },
     {
       "key": "total_calls_by_call_type",
@@ -236,7 +244,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "call_logs"
+      }
     },
     {
       "key": "calls_made_by_users_over_time",
@@ -330,7 +342,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "call_logs"
+      }
     },
     {
       "key": "distrbution_of_calls_by_call_type",
@@ -427,7 +443,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "call_logs"
+      }
     },
     {
       "key": "distribution_of_calls_by_related_company_name",
@@ -526,7 +546,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "call_logs"
+      }
     },
     {
       "key": "call_duration_per_user",
@@ -664,7 +688,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "call_logs"
+      }
     },
     {
       "key": "total_jobs",
@@ -714,7 +742,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "jobs"
+      }
     },
     {
       "key": "total_full_time_jobs",
@@ -783,7 +815,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "jobs"
+      }
     },
     {
       "key": "total_open_jobs",
@@ -852,7 +888,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "jobs"
+      }
     },
     {
       "key": "total_closed_jobs",
@@ -922,7 +962,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "jobs"
+      }
     },
     {
       "key": "total_contract_jobs",
@@ -992,7 +1036,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "jobs"
+      }
     },
     {
       "key": "total_candidates_assigned_to_jobs",
@@ -1042,7 +1090,11 @@
           "parameter_slug": "date",
           "column_name": "hiring_stage_date"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "assignments"
+      }
     },
     {
       "key": "total_jobs_created_over_time",
@@ -1119,7 +1171,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "jobs"
+      }
     },
     {
       "key": "candidates_placed_by_source",
@@ -1284,7 +1340,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "assignments"
+      }
     },
     {
       "key": "candidates_placed_per_job",
@@ -1470,7 +1530,20 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "pivot_dashboard",
+        "dashboard_name": "% Candidates Placed per Job Drill-down",
+        "row_dimensions": [
+          "job_name",
+          "created_on"
+        ],
+        "value_cards": {
+          "Assigned Candidates": "assignments",
+          "Placed Candidates": "placed_candidates_detail",
+          "% Placed Candidates": "placed_candidates_detail"
+        }
+      }
     },
     {
       "key": "total_deals",
@@ -1520,7 +1593,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "deals"
+      }
     },
     {
       "key": "total_equal_split_deals",
@@ -1589,7 +1666,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "deals"
+      }
     },
     {
       "key": "total_custom_split_deals",
@@ -1658,7 +1739,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "deals"
+      }
     },
     {
       "key": "deal_target_achieved",
@@ -1711,7 +1796,11 @@
           "parameter_slug": "date",
           "column_name": "close_date"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "deals"
+      }
     },
     {
       "key": "total_deal_value_per_company",
@@ -1802,7 +1891,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "deals"
+      }
     },
     {
       "key": "job_status_overview_by_company_name",
@@ -1958,7 +2051,11 @@
           "parameter_slug": "date",
           "column_name": "updated_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "companies"
+      }
     },
     {
       "key": "total_deals_by_deal_stage",
@@ -2033,7 +2130,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "deals"
+      }
     },
     {
       "key": "total_deals_by_deal_type",
@@ -2108,7 +2209,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "deals"
+      }
     },
     {
       "key": "total_candidates",
@@ -2154,7 +2259,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "candidates"
+      }
     },
     {
       "key": "total_contacts",
@@ -2200,7 +2309,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "contacts"
+      }
     },
     {
       "key": "candidates_added_per_month",
@@ -2268,7 +2381,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "candidates"
+      }
     },
     {
       "key": "contacts_added_per_month",
@@ -2336,7 +2453,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "contacts"
+      }
     },
     {
       "key": "distribution_of_candidates_by_source",
@@ -2419,7 +2540,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "candidates"
+      }
     },
     {
       "key": "distribution_of_contacts_by_stage",
@@ -2487,7 +2612,11 @@
           "parameter_slug": "date",
           "column_name": "created_on"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "contacts"
+      }
     },
     {
       "key": "deal_value_closed_over_time",
@@ -2586,7 +2715,353 @@
           "parameter_slug": "date",
           "column_name": "close_date"
         }
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "deals"
+      }
+    }
+  ],
+  "drilldown_entities": {
+    "call_logs": {
+      "dedup": false,
+      "columns": [
+        {
+          "column": "call_type",
+          "label": "Call Type"
+        },
+        {
+          "column": "related_company_name",
+          "label": "Company"
+        },
+        {
+          "column": "call_from_name",
+          "label": "Recruiter"
+        },
+        {
+          "column": "duration_in_seconds",
+          "label": "Duration (sec)"
+        },
+        {
+          "column": "created_on",
+          "label": "Call Date"
+        }
       ]
+    },
+    "jobs": {
+      "dedup": false,
+      "columns": [
+        {
+          "column": "job_name",
+          "label": "Job Name",
+          "profile_field": "job_profile"
+        },
+        {
+          "column": "job_status_label",
+          "label": "Status"
+        },
+        {
+          "column": "owner_name",
+          "label": "Owner"
+        },
+        {
+          "column": "city",
+          "label": "City"
+        },
+        {
+          "column": "created_on",
+          "label": "Created On"
+        }
+      ]
+    },
+    "assignments": {
+      "dedup": true,
+      "columns": [
+        {
+          "column": "candidate_full_name",
+          "label": "Candidate Name"
+        },
+        {
+          "column": "job_name",
+          "label": "Job Name"
+        },
+        {
+          "column": "company_name",
+          "label": "Company"
+        },
+        {
+          "column": "hiring_stage",
+          "label": "Hiring Stage"
+        },
+        {
+          "column": "source",
+          "label": "Source"
+        },
+        {
+          "column": "job_owner_name",
+          "label": "Job Owner"
+        },
+        {
+          "column": "created_on",
+          "label": "Created On"
+        },
+        {
+          "column": "job_created_on",
+          "label": "Job Created On"
+        }
+      ]
+    },
+    "deals": {
+      "dedup": true,
+      "columns": [
+        {
+          "column": "deal_name",
+          "label": "Deal Name"
+        },
+        {
+          "column": "company_name",
+          "label": "Company"
+        },
+        {
+          "column": "job_name",
+          "label": "Job"
+        },
+        {
+          "column": "candidate_name",
+          "label": "Candidate"
+        },
+        {
+          "column": "deal_stage",
+          "label": "Stage"
+        },
+        {
+          "column": "deal_type",
+          "label": "Type"
+        },
+        {
+          "column": "deal_value",
+          "label": "Deal Value"
+        },
+        {
+          "column": "owner_name",
+          "label": "Owner"
+        },
+        {
+          "column": "close_date",
+          "label": "Close Date"
+        },
+        {
+          "column": "created_on",
+          "label": "Created On"
+        }
+      ]
+    },
+    "contacts": {
+      "dedup": false,
+      "columns": [
+        {
+          "column": "contact_name",
+          "label": "Contact Name",
+          "profile_field": "contact_profile"
+        },
+        {
+          "column": "email_id",
+          "label": "Email"
+        },
+        {
+          "column": "stage",
+          "label": "Stage"
+        },
+        {
+          "column": "city",
+          "label": "City"
+        },
+        {
+          "column": "created_on",
+          "label": "Created On"
+        }
+      ]
+    },
+    "candidates": {
+      "dedup": false,
+      "columns": [
+        {
+          "column": "full_name",
+          "label": "Candidate Name",
+          "profile_field": "candidate_profile"
+        },
+        {
+          "column": "email",
+          "label": "Email"
+        },
+        {
+          "column": "source",
+          "label": "Source"
+        },
+        {
+          "column": "city",
+          "label": "City"
+        },
+        {
+          "column": "gender",
+          "label": "Gender"
+        },
+        {
+          "column": "created_on",
+          "label": "Created On"
+        }
+      ]
+    },
+    "companies": {
+      "dedup": false,
+      "columns": [
+        {
+          "column": "company_name",
+          "label": "Company Name",
+          "profile_field": "company_profile"
+        },
+        {
+          "column": "industry",
+          "label": "Industry"
+        },
+        {
+          "column": "city",
+          "label": "City"
+        },
+        {
+          "column": "open_jobs",
+          "label": "Open Jobs"
+        },
+        {
+          "column": "closed_jobs",
+          "label": "Closed Jobs"
+        }
+      ]
+    }
+  },
+  "drilldown_cards": [
+    {
+      "key": "placed_candidates_detail",
+      "entity": "assignments",
+      "name": "Placed Candidates \u2014 Detail",
+      "field_names": {
+        "9201": "candidate_full_name",
+        "9202": "job_name",
+        "9203": "company_name",
+        "9204": "hiring_stage",
+        "9205": "source",
+        "9206": "job_owner_name",
+        "9207": "created_on",
+        "9208": "job_created_on",
+        "9209": "id"
+      },
+      "dataset_query": {
+        "database": 13371569,
+        "lib/type": "mbql/query",
+        "stages": [
+          {
+            "lib/type": "mbql.stage/mbql",
+            "source-table": 0,
+            "filter": [
+              "=",
+              {},
+              [
+                "field",
+                {},
+                9204
+              ],
+              "Placed"
+            ],
+            "breakout": [
+              [
+                "field",
+                {},
+                9201
+              ],
+              [
+                "field",
+                {},
+                9202
+              ],
+              [
+                "field",
+                {},
+                9203
+              ],
+              [
+                "field",
+                {},
+                9204
+              ],
+              [
+                "field",
+                {},
+                9205
+              ],
+              [
+                "field",
+                {},
+                9206
+              ],
+              [
+                "field",
+                {},
+                9207
+              ],
+              [
+                "field",
+                {},
+                9208
+              ],
+              [
+                "field",
+                {},
+                9209
+              ]
+            ]
+          }
+        ]
+      },
+      "visualization_settings": {
+        "table.columns": [
+          {
+            "name": "candidate_full_name",
+            "enabled": true
+          },
+          {
+            "name": "job_name",
+            "enabled": true
+          },
+          {
+            "name": "company_name",
+            "enabled": true
+          },
+          {
+            "name": "hiring_stage",
+            "enabled": true
+          },
+          {
+            "name": "source",
+            "enabled": true
+          },
+          {
+            "name": "job_owner_name",
+            "enabled": true
+          },
+          {
+            "name": "created_on",
+            "enabled": true
+          },
+          {
+            "name": "job_created_on",
+            "enabled": true
+          },
+          {
+            "name": "id",
+            "enabled": false
+          }
+        ]
+      }
     }
   ]
 }

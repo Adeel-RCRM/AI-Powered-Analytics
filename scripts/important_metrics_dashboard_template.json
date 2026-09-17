@@ -92,6 +92,26 @@
     "1870814": {
       "entity": "candidates",
       "column": "created_on"
+    },
+    "9300001": {
+      "entity": "jobs",
+      "column": "job_name"
+    },
+    "9300002": {
+      "entity": "jobs",
+      "column": "job_status_label"
+    },
+    "9300003": {
+      "entity": "jobs",
+      "column": "owner_name"
+    },
+    "9300004": {
+      "entity": "jobs",
+      "column": "city"
+    },
+    "9300005": {
+      "entity": "jobs",
+      "column": "created_on"
     }
   },
   "table_entity_map": {
@@ -262,6 +282,10 @@
         "column": "job_created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "jobs"
       }
     },
     {
@@ -427,6 +451,10 @@
         "column": "job_created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "jobs"
       }
     },
     {
@@ -511,7 +539,11 @@
           "entity": "assignments",
           "raw_table_name": "assign_job_candidate_8987"
         }
-      ]
+      ],
+      "drill": {
+        "kind": "single",
+        "target": "assignments"
+      }
     },
     {
       "key": "job_opening_duration",
@@ -964,6 +996,17 @@
         "column": "created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "per_column",
+        "columns": {
+          "Open For Less Than Or Equal to 30 Days": "jobs_open_le_30_detail",
+          "Open for more than 30 days": "jobs_open_30_60_detail",
+          "Open for more than or equal to 60 days": "jobs_open_ge_60_detail",
+          "Open for more than 90 days": "jobs_open_gt_90_detail",
+          "Closed Jobs": "jobs_closed_detail",
+          "Total Jobs": "jobs"
+        }
       }
     },
     {
@@ -1039,6 +1082,10 @@
         "column": "created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "jobs"
       }
     },
     {
@@ -1130,6 +1177,10 @@
         "column": "created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "assignments"
       }
     },
     {
@@ -1318,6 +1369,10 @@
         "column": "created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "jobs"
       }
     },
     {
@@ -1506,6 +1561,10 @@
         "column": "created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "jobs"
       }
     },
     {
@@ -1705,6 +1764,10 @@
         "column": "job_created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "assignments"
       }
     },
     {
@@ -1905,6 +1968,10 @@
         "column": "job_created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "assignments"
       }
     },
     {
@@ -2091,6 +2158,10 @@
         "column": "created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "jobs"
       }
     },
     {
@@ -2155,6 +2226,10 @@
         "column": "created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "candidates"
       }
     },
     {
@@ -2349,6 +2424,10 @@
         "column": "created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "candidates"
       }
     },
     {
@@ -2413,6 +2492,10 @@
         "column": "created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "candidates"
       }
     },
     {
@@ -2497,6 +2580,10 @@
         "column": "job_created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "assignments"
       }
     },
     {
@@ -2582,6 +2669,10 @@
         "column": "job_created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "assignments"
       }
     },
     {
@@ -2667,6 +2758,608 @@
         "column": "job_created_on",
         "parameter_slug": "date",
         "base_type": "type/DateTimeWithLocalTZ"
+      },
+      "drill": {
+        "kind": "single",
+        "target": "assignments"
+      }
+    }
+  ],
+  "drilldown_entities": {
+    "jobs": {
+      "dedup": false,
+      "columns": [
+        {
+          "column": "job_name",
+          "label": "Job Name",
+          "profile_field": "job_profile"
+        },
+        {
+          "column": "job_status_label",
+          "label": "Status"
+        },
+        {
+          "column": "owner_name",
+          "label": "Owner"
+        },
+        {
+          "column": "city",
+          "label": "City"
+        },
+        {
+          "column": "created_on",
+          "label": "Created On"
+        }
+      ]
+    },
+    "assignments": {
+      "dedup": true,
+      "columns": [
+        {
+          "column": "candidate_full_name",
+          "label": "Candidate Name"
+        },
+        {
+          "column": "job_name",
+          "label": "Job Name"
+        },
+        {
+          "column": "company_name",
+          "label": "Company"
+        },
+        {
+          "column": "hiring_stage",
+          "label": "Hiring Stage"
+        },
+        {
+          "column": "source",
+          "label": "Source"
+        },
+        {
+          "column": "job_owner_name",
+          "label": "Job Owner"
+        },
+        {
+          "column": "created_on",
+          "label": "Created On"
+        },
+        {
+          "column": "job_created_on",
+          "label": "Job Created On"
+        }
+      ]
+    },
+    "candidates": {
+      "dedup": false,
+      "columns": [
+        {
+          "column": "full_name",
+          "label": "Candidate Name",
+          "profile_field": "candidate_profile"
+        },
+        {
+          "column": "email",
+          "label": "Email"
+        },
+        {
+          "column": "source",
+          "label": "Source"
+        },
+        {
+          "column": "city",
+          "label": "City"
+        },
+        {
+          "column": "gender",
+          "label": "Gender"
+        },
+        {
+          "column": "created_on",
+          "label": "Created On"
+        }
+      ]
+    }
+  },
+  "drilldown_cards": [
+    {
+      "key": "jobs_open_le_30_detail",
+      "entities": [
+        "jobs"
+      ],
+      "name": "Open Jobs \u2264 30 Days \u2014 Detail",
+      "dataset_query": {
+        "database": 13371569,
+        "lib/type": "mbql/query",
+        "stages": [
+          {
+            "lib/type": "mbql.stage/mbql",
+            "source-table": 48929,
+            "filter": [
+              "and",
+              {},
+              [
+                "=",
+                {},
+                [
+                  "field",
+                  {},
+                  9300002
+                ],
+                "Open"
+              ],
+              [
+                "<=",
+                {},
+                [
+                  "datetime-diff",
+                  {},
+                  [
+                    "field",
+                    {},
+                    9300005
+                  ],
+                  [
+                    "now",
+                    {}
+                  ],
+                  "day"
+                ],
+                30
+              ]
+            ],
+            "fields": [
+              [
+                "field",
+                {},
+                9300001
+              ],
+              [
+                "field",
+                {},
+                9300002
+              ],
+              [
+                "field",
+                {},
+                9300003
+              ],
+              [
+                "field",
+                {},
+                9300004
+              ],
+              [
+                "field",
+                {},
+                9300005
+              ]
+            ]
+          }
+        ]
+      },
+      "visualization_settings": {
+        "table.columns": [
+          {
+            "name": "job_name",
+            "enabled": true
+          },
+          {
+            "name": "job_status_label",
+            "enabled": true
+          },
+          {
+            "name": "owner_name",
+            "enabled": true
+          },
+          {
+            "name": "city",
+            "enabled": true
+          },
+          {
+            "name": "created_on",
+            "enabled": true
+          }
+        ]
+      }
+    },
+    {
+      "key": "jobs_open_30_60_detail",
+      "entities": [
+        "jobs"
+      ],
+      "name": "Open Jobs 30\u201360 Days \u2014 Detail",
+      "dataset_query": {
+        "database": 13371569,
+        "lib/type": "mbql/query",
+        "stages": [
+          {
+            "lib/type": "mbql.stage/mbql",
+            "source-table": 48929,
+            "filter": [
+              "and",
+              {},
+              [
+                "=",
+                {},
+                [
+                  "field",
+                  {},
+                  9300002
+                ],
+                "Open"
+              ],
+              [
+                ">",
+                {},
+                [
+                  "datetime-diff",
+                  {},
+                  [
+                    "field",
+                    {},
+                    9300005
+                  ],
+                  [
+                    "now",
+                    {}
+                  ],
+                  "day"
+                ],
+                30
+              ],
+              [
+                "<",
+                {},
+                [
+                  "datetime-diff",
+                  {},
+                  [
+                    "field",
+                    {},
+                    9300005
+                  ],
+                  [
+                    "now",
+                    {}
+                  ],
+                  "day"
+                ],
+                60
+              ]
+            ],
+            "fields": [
+              [
+                "field",
+                {},
+                9300001
+              ],
+              [
+                "field",
+                {},
+                9300002
+              ],
+              [
+                "field",
+                {},
+                9300003
+              ],
+              [
+                "field",
+                {},
+                9300004
+              ],
+              [
+                "field",
+                {},
+                9300005
+              ]
+            ]
+          }
+        ]
+      },
+      "visualization_settings": {
+        "table.columns": [
+          {
+            "name": "job_name",
+            "enabled": true
+          },
+          {
+            "name": "job_status_label",
+            "enabled": true
+          },
+          {
+            "name": "owner_name",
+            "enabled": true
+          },
+          {
+            "name": "city",
+            "enabled": true
+          },
+          {
+            "name": "created_on",
+            "enabled": true
+          }
+        ]
+      }
+    },
+    {
+      "key": "jobs_open_ge_60_detail",
+      "entities": [
+        "jobs"
+      ],
+      "name": "Open Jobs \u2265 60 Days \u2014 Detail",
+      "dataset_query": {
+        "database": 13371569,
+        "lib/type": "mbql/query",
+        "stages": [
+          {
+            "lib/type": "mbql.stage/mbql",
+            "source-table": 48929,
+            "filter": [
+              "and",
+              {},
+              [
+                "=",
+                {},
+                [
+                  "field",
+                  {},
+                  9300002
+                ],
+                "Open"
+              ],
+              [
+                ">=",
+                {},
+                [
+                  "datetime-diff",
+                  {},
+                  [
+                    "field",
+                    {},
+                    9300005
+                  ],
+                  [
+                    "now",
+                    {}
+                  ],
+                  "day"
+                ],
+                60
+              ]
+            ],
+            "fields": [
+              [
+                "field",
+                {},
+                9300001
+              ],
+              [
+                "field",
+                {},
+                9300002
+              ],
+              [
+                "field",
+                {},
+                9300003
+              ],
+              [
+                "field",
+                {},
+                9300004
+              ],
+              [
+                "field",
+                {},
+                9300005
+              ]
+            ]
+          }
+        ]
+      },
+      "visualization_settings": {
+        "table.columns": [
+          {
+            "name": "job_name",
+            "enabled": true
+          },
+          {
+            "name": "job_status_label",
+            "enabled": true
+          },
+          {
+            "name": "owner_name",
+            "enabled": true
+          },
+          {
+            "name": "city",
+            "enabled": true
+          },
+          {
+            "name": "created_on",
+            "enabled": true
+          }
+        ]
+      }
+    },
+    {
+      "key": "jobs_open_gt_90_detail",
+      "entities": [
+        "jobs"
+      ],
+      "name": "Open Jobs > 90 Days \u2014 Detail",
+      "dataset_query": {
+        "database": 13371569,
+        "lib/type": "mbql/query",
+        "stages": [
+          {
+            "lib/type": "mbql.stage/mbql",
+            "source-table": 48929,
+            "filter": [
+              "and",
+              {},
+              [
+                "=",
+                {},
+                [
+                  "field",
+                  {},
+                  9300002
+                ],
+                "Open"
+              ],
+              [
+                ">",
+                {},
+                [
+                  "datetime-diff",
+                  {},
+                  [
+                    "field",
+                    {},
+                    9300005
+                  ],
+                  [
+                    "now",
+                    {}
+                  ],
+                  "day"
+                ],
+                90
+              ]
+            ],
+            "fields": [
+              [
+                "field",
+                {},
+                9300001
+              ],
+              [
+                "field",
+                {},
+                9300002
+              ],
+              [
+                "field",
+                {},
+                9300003
+              ],
+              [
+                "field",
+                {},
+                9300004
+              ],
+              [
+                "field",
+                {},
+                9300005
+              ]
+            ]
+          }
+        ]
+      },
+      "visualization_settings": {
+        "table.columns": [
+          {
+            "name": "job_name",
+            "enabled": true
+          },
+          {
+            "name": "job_status_label",
+            "enabled": true
+          },
+          {
+            "name": "owner_name",
+            "enabled": true
+          },
+          {
+            "name": "city",
+            "enabled": true
+          },
+          {
+            "name": "created_on",
+            "enabled": true
+          }
+        ]
+      }
+    },
+    {
+      "key": "jobs_closed_detail",
+      "entities": [
+        "jobs"
+      ],
+      "name": "Closed Jobs \u2014 Detail",
+      "dataset_query": {
+        "database": 13371569,
+        "lib/type": "mbql/query",
+        "stages": [
+          {
+            "lib/type": "mbql.stage/mbql",
+            "source-table": 48929,
+            "filter": [
+              "=",
+              {},
+              [
+                "field",
+                {},
+                9300002
+              ],
+              "Closed"
+            ],
+            "fields": [
+              [
+                "field",
+                {},
+                9300001
+              ],
+              [
+                "field",
+                {},
+                9300002
+              ],
+              [
+                "field",
+                {},
+                9300003
+              ],
+              [
+                "field",
+                {},
+                9300004
+              ],
+              [
+                "field",
+                {},
+                9300005
+              ]
+            ]
+          }
+        ]
+      },
+      "visualization_settings": {
+        "table.columns": [
+          {
+            "name": "job_name",
+            "enabled": true
+          },
+          {
+            "name": "job_status_label",
+            "enabled": true
+          },
+          {
+            "name": "owner_name",
+            "enabled": true
+          },
+          {
+            "name": "city",
+            "enabled": true
+          },
+          {
+            "name": "created_on",
+            "enabled": true
+          }
+        ]
       }
     }
   ]

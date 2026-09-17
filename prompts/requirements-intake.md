@@ -271,9 +271,13 @@ Then, on that dashboard:
 ## Add the documentation tab (only if the user asks for one)
 
 Ask the user whether they'd like a documentation tab (a plain yes/no) before
-building one — never add it unprompted. If they say yes, add one more tab
-to each dashboard just created or added to, containing only text cards (per
-CLAUDE.md "Dashboard documentation"):
+building one — never add it unprompted. If the user declines for a given
+dashboard, skip straight to "Logging" below for that dashboard — its cards,
+layout, and filters from "Assemble the dashboard(s)" are already finalized
+without it.
+
+If they say yes, add one more tab to each dashboard just created or added
+to, containing only text cards (per CLAUDE.md "Dashboard documentation"):
 
 1. Add a new entry to the dashboard's `tabs` array (negative id for a new
    tab, e.g. "Guide" or "About this dashboard") — never touching any tab

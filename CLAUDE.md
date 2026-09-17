@@ -267,6 +267,28 @@ nothing matches, tell the user the account couldn't be found (per "Error
 handling" below) rather than guessing or proceeding on an unconfirmed
 account number.
 
+**Account 662 is the standing internal test account for this project.**
+Whenever a task needs an account to test against — verifying a change to a
+`scripts/` flow, a prompt, or CLAUDE.md itself, not real client analytics
+work — use 662 rather than picking an arbitrary real client account. It's
+also the account `references/schema-map.md` was built from, so its
+structural shape (all 12 core tables) is already documented. Account 662
+already carries real, pre-existing content in its own collection ("Shared
+Collection 662", id 16304) from before this project's tooling existed — a
+"Default Dashboard" (13648) and "Important Metrics Dashboard" (13652) among
+them — so **all test output goes in the dedicated "AI Analytics Test
+Folder (Do Not Touch)" sub-collection (id 27635) inside 16304, never
+directly in the account's own top-level collection.** For
+`scripts/create_default_dashboard.py` and
+`scripts/create_important_metrics_dashboard.py`, pass
+`--test-collection-id 27635` to redirect the whole dashboard/Cards/Models/
+Drill-downs structure there instead of resolving (and pinning into) the
+account's real collection — this also skips the legacy-"Data Team WIP"
+dashboard check, since that guard only makes sense for the account's real
+collection. For anything created by hand while testing (a one-off card,
+manual dashboard work), create it directly inside 27635 the same way any
+other collection destination in this project is resolved.
+
 ## Data discovery
 
 Follow `prompts/discovery.md`. Use the `mb` CLI's hydration ladder
@@ -520,6 +542,20 @@ the dashboard, not on the card definition itself. **Full method, confirmed
 JSON shapes, and known gotchas are in `prompts/drilldowns.md` — read it in
 full before building any drill-down; the rules below are the summary, not
 the whole of it.**
+
+This applies to the Default Dashboard and Important Metrics Dashboard flows
+too, not just Requirements Intake — `scripts/create_default_dashboard.py`
+and `scripts/create_important_metrics_dashboard.py` implement it themselves
+(shared logic in `scripts/dashboard_drilldowns.py`, wiring driven by each
+template's own `drilldown_entities`/`drilldown_cards`/per-card `drill`
+keys), rather than asking the user or building it live per account. See
+`scripts/dashboard_drilldowns.py`'s own docstring for the documented
+simplifications this automated version makes (a bucketed/computed breakout
+dimension is never passed through as a click target; a multi-series graph
+card gets one whole-chart click target, not a per-series split; a
+denormalized name field with no profile column of its own on the same
+table stays unlinked text) that a manual Requirements Intake session, with
+a human confirming shapes against a UI-built example, wouldn't need to make.
 
 - **Always build after the dashboard is finalized, never in the same pass
   as cards/layout — and confirm with the user (plain yes/no) before

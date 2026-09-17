@@ -9,7 +9,7 @@ grounded reference material the workflow can look up instead of rediscovering
 per request. Do the following:
 
 1. SCHEMA MAP
-   Use the `mb` CLI / Metabase MCP connector to inspect our core tables:
+   Use the `mb` CLI to inspect our core tables:
    candidates, companies, contacts, call_logs, assigned_job_candidates, and any
    other tables that clearly relate to these (foreign keys pointing in/out).
    For each table, document: columns and types, primary/foreign keys, what one
@@ -61,7 +61,7 @@ per request. Do the following:
    - Insert a step 0: check references/canonical-patterns.md for a match
      before doing full entity/table discovery.
    - Point steps 2-6 at the new reference files instead of "go inspect via
-     mb/MCP" as the first move — inspection becomes the fallback for what
+     mb" as the first move — inspection becomes the fallback for what
      the reference files don't cover, not the default.
    - Add a validation step after building: cross-check the result against a
      raw count/independent number before naming and saving it, and say what

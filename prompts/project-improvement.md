@@ -24,16 +24,23 @@ suggestion on that task.
 
 Instead, base every suggestion here on an actual pass over the **project
 repository itself**: (re-)read `CLAUDE.md` in full and check it against
-`prompts/`, `references/`, `scripts/`, and `config/` for a real gap,
-contradiction, drift, or missed opportunity — e.g. a rule CLAUDE.md states
-that a script doesn't actually implement, two files describing the same
-convention slightly differently, a `references/*.md` entry that's gone
-stale against what a script or prompt now does, or a script whose
-docstring no longer matches its own behavior. `logs/history.jsonl` and the
-existing entries in `references/project-improvements.md` are fair
-evidence to pull into that pass (what's actually been built/skipped, what
-patterns keep recurring, what's already been flagged) — but they're one
-input into a repo-wide check, never a substitute for actually reading the
+`prompts/`, `references/`, `scripts/`, `config/`, and this machine's own
+`logs/history.jsonl` for a real gap, contradiction, drift, or missed
+opportunity — e.g. a rule CLAUDE.md states that a script doesn't actually
+implement, two files describing the same convention slightly differently,
+a `references/*.md` entry that's gone stale against what a script or
+prompt now does, a script whose docstring no longer matches its own
+behavior, or a footgun/skip/failure that `logs/history.jsonl` shows
+actually happened but the rest of the repo doesn't yet account for.
+`logs/history.jsonl` is local-only and git-ignored (per CLAUDE.md's
+"History log"), so **always check whether it's actually present and
+non-empty on this machine before treating it as part of the pass** — a
+fresh checkout or a machine that hasn't run any workflows yet won't have
+one, and that's not itself a gap to report. When it exists, it and the
+existing entries in `references/project-improvements.md` are fair evidence
+to pull into the pass (what's actually been built/skipped, what patterns
+keep recurring, what's already been flagged) — but they're inputs into a
+repo-wide check, never a substitute for actually reading the committed
 files as they stand today, and never the sole basis for a suggestion on
 their own.
 

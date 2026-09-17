@@ -118,6 +118,25 @@ in this shape:
 **Currency:** (fill in once confirmed, per "Open questions" #8)
 ```
 
+## Account 92840
+
+**Confirmed term mappings:**
+- "Jobs created" (team-member activity) → `jobs_92840.owner_id`/`owner_name`, `created_on` — full credit to job owner only, never split (client's own rule: job creation credit is always one person).
+- "Sent to client" / "interviews" / "offers" / "placements" (team-member activity credit) → counted from `assign_job_candidate_92840` rows reaching the relevant `hiring_stage` value; each event's credit is split between `job_owner_id`/`job_owner_name` and `candidate_owner_id`/`candidate_owner_name`: **full credit to one person if job owner = candidate owner on that row, otherwise 0.5 credit each** (client's explicit rule, confirmed 2026-09-10 call transcript + 2026-09-17 session).
+- "Billing" / deal revenue credit (team-member activity + leaderboard) → same job-owner/candidate-owner 50/50-or-full split, but derived via `deals_92840.join_for_jobs_table → jobs_92840.owner` (job side) and `deals_92840.join_for_candidates_table → candidates_92840.owner` (candidate side) — **only for deals that actually have a job link**. Deals with no job link (60 of 130, 46%, confirmed 2026-09-17) are **excluded from the split-credit/leaderboard view entirely** — user's explicit choice — and surface only in the separate deals-not-linked-to-a-job data-accuracy report.
+- `deals_92840.deal_value` is **repeated in full on every duplicate-id collaborator row**, not split (confirmed live 2026-09-17 per CLAUDE.md's Deals verification step) — always dedupe to one row per `id` (e.g. `MIN(deal_value)` grouped by `id`) before summing.
+- Old "Owner Activity" dashboard cards ("Activity By Job Owner", "Activity By Candidate Owner") → kept as-is; new combined split-credit cards are added alongside them, not a replacement (user's explicit choice, 2026-09-17).
+
+**Hiring-stage values (confirmed by user, 2026-09-17):** Assigned, Candidate Canceled Interview, Candidate Not Interested, Candidate Passed Post Interview, Client Passed Post Interview, Client Passed Pre Interview, Completed Interview, I rejected not a fit, Interview Scheduled, Interviewed Not Offered, MIA after submitting, Off Market Candidate took Different Job, Offered, On Hold, Placed, Reverse Market Created Opening, Sent to Client, Terminated, Turndown. **Funnel order not yet confirmed** (list given alphabetically, not by funnel progression) — ask separately if a future chart needs the ordinal current-stage `CASE` ranking (none of account 92840's charts built so far need it — each uses a single named stage as a direct filter, not a "furthest stage reached" calculation).
+- "Interviews" (team-member activity metric) → `hiring_stage = 'Interview Scheduled'` only — user explicitly confirmed not to also count "Completed Interview" separately.
+- "Sent to client" → `hiring_stage = 'Sent to Client'`.
+- "Offers" → `hiring_stage = 'Offered'`.
+- "Placements" → `hiring_stage = 'Placed'`.
+
+**Deal-stage values (confirmed by user, 2026-09-17):** Lost, Pending Start, Started Hasn't Paid, Won — exactly 4 values, given in this order. "Won" is the final/paid stage (money received) — resolves the transcript's informal "Won vs. Paid" ambiguity; there is no separate literal "Paid" value.
+
+**Currency:** USD (confirmed 2026-09-17).
+
 ## Unattributed (predates per-account structure — reconfirm before use)
 
 These mappings were recorded before this file separated answers by account.

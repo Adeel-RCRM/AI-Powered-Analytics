@@ -28,6 +28,18 @@ on what changed (or why it was declined) and the date.
 
 ## Resolved
 
+- 2026-09-15 — general — consistency — Project improvement review (grounded in CLAUDE.md vs. scripts/)
+  CLAUDE.md's "Drill-downs" section states its requirement ("every card ... should carry an explicit click_behavior wherever a sensible drill target exists") with no scoping to Requirements Intake only, unlike the parallel "Dashboard documentation" section which explicitly exempts the Default Dashboard and Important Metrics Dashboard flows. But neither `scripts/create_default_dashboard.py` nor `scripts/create_important_metrics_dashboard.py` (nor their templates) wires any `click_behavior` — they only create the empty "Drill-downs" sub-collection structurally. Worth either adding an explicit scope note to "Drill-downs" (matching the documentation-tab carve-out) or implementing drill-downs in the two scripts — whichever is actually intended.
+  → Resolved 2026-09-15: implemented drill-downs in both scripts (new shared `scripts/dashboard_drilldowns.py`, `drilldown_entities`/`drilldown_cards`/per-card `drill` keys added to both templates) rather than exempting them — every qualifying dashcard across both dashboards now gets a `click_behavior` (single dashcard-level into a shared per-entity detail list for the large majority; per-column for the one genuinely multi-metric table card; a dedicated drill-down dashboard for the one multi-value pivot), with the "already most granular" carve-out applied to the one unaggregated table card. Added a clarifying line to CLAUDE.md's "Drill-downs" section pointing at this.
+
+- 2026-09-15 — general — consistency — Project improvement review (grounded in this file's own structure)
+  This file's very last line is a dangling `-->` with no matching `<!--` before it (after the 2026-08-19 Resolved entry), left over from an earlier template edit — the file that's supposed to catch drift in the rest of the project carries an unfixed comment-structure glitch of its own. Worth deleting that stray closer.
+  → Resolved 2026-09-15: removed the stray trailing `-->`.
+
+- 2026-09-15 — general — consistency — Project improvement review (grounded in prompts/metabase_skill_improvement.md)
+  `prompts/metabase_skill_improvement.md` — still the file `prompts/requirements-intake.md` points to for how to build `references/canonical-patterns.md` once that's undertaken — tells its reader to use "the `mb` CLI / Metabase MCP connector" (twice: lines 12 and 64) to inspect tables and search existing work. That directly contradicts CLAUDE.md hard constraint 1, "Metabase CLI (`mb`) is the only interface to data and analytics." No other file in the project mentions MCP at all, so this reads as drift from an earlier draft rather than an intended exception. Worth stripping the MCP mentions from that file so a future session building canonical-patterns.md isn't handed a green light to use a forbidden interface.
+  → Resolved 2026-09-15: stripped both MCP mentions from `prompts/metabase_skill_improvement.md` (lines 12 and 64) — it now points only to the `mb` CLI, consistent with hard constraint 1.
+
 - 2026-09-15 — general — robustness — Project improvement review (grounded in account 44663's Sourcing Report drill-down history)
   Mid-session on 44663, `mb card query --parameters` returned a negative result for a plain-MBQL custom-destination drill-down, which was read as "this whole mechanism doesn't work" and triggered a full rebuild (native SQL, then an alternate on-dashboard Detail-tab-with-parameter_mappings architecture) before a real UI-built example proved the original plain-MBQL `click_behavior` approach was fine all along. The actual cause — `mb card query --parameters` doesn't exercise the same code path as real click-through navigation — is stated once in `logs/history.jsonl` but isn't in `prompts/drilldowns.md`'s "Known Metabase gotchas" list. Worth adding as its own bullet there: a negative result from that command is not proof a click_behavior mechanism is broken, so don't let it justify an architecture rebuild — check against a confirmed UI-built example first, per the gotcha bullet already there for guessing the shape itself wrong.
   → Resolved 2026-09-15: added this as its own "Known Metabase gotchas" bullet in `prompts/drilldowns.md`, right after the "guessed wrong twice" bullet it builds on.
@@ -51,4 +63,3 @@ on what changed (or why it was declined) and the date.
   about to be formatted.
   → Resolved 2026-08-22: CLAUDE.md "Value formatting" now only asks when
     the confirmed chart set includes at least one monetary field.
--->
