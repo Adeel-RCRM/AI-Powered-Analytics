@@ -276,14 +276,12 @@ Then, on that dashboard:
    On an existing dashboard, reuse an existing filter that already covers
    the same dimension (map the new cards to it) rather than adding a
    duplicate.
-3. Wire drill-downs per CLAUDE.md "Drill-downs" — set `click_behavior` on
-   each new dashcard where a sensible drill target exists (cross-filtering
-   other cards on the dashboard, or a custom destination to a more detailed
-   card already created).
-4. Verify with `mb dashboard get <id> --json` — confirm every new card
-   landed, filters are mapped, drill-downs are wired as intended, and
-   (on an existing dashboard) nothing that was already there changed.
-5. Report the dashboard id/link back to the user, including which
+3. Verify with `mb dashboard get <id> --json` — confirm every new card
+   landed, filters are mapped, and (on an existing dashboard) nothing that
+   was already there changed. **Not drill-downs yet** — those are a
+   separate, later step (see "Add drill-downs" below) only once the
+   dashboard is genuinely finalized, never in this same pass.
+4. Report the dashboard id/link back to the user, including which
    destination case applied (new vs. existing, and why, per "Choose the
    dashboard destination" above).
 
@@ -315,10 +313,14 @@ an **existing** dashboard (no risk of the whole-array-replace gotcha
      shows and why it matters, and the chart itself embedded live right
      next to it (`cardEmbed` referencing the same card id already created,
      wrapped in a `resizeNode` at a modest height — 300-400px).
-   - A **How to use it** section — the dashboard's filters, and any
-     drill-downs from "Assemble the dashboard(s)" step 3, explained in
-     plain terms, pointing back to the live dashboard (via the same
-     `smartLink`) for "try it yourself."
+   - A **How to use it** section — the dashboard's filters, explained in
+     plain terms. **Drill-downs are wired *after* this Document is
+     created** (see "Add drill-downs" below — documentation comes first),
+     so don't describe specific click-through behavior that doesn't exist
+     yet; a static document can't demonstrate a click either way. Point
+     back to the live dashboard (via the same `smartLink`) for "try it
+     yourself" — that's accurate whether or not drill-downs end up added
+     later, and stays correct without needing an update if they are.
 3. Only embed cards that already exist (a plain positive `id` in
    `cardEmbed`) — don't use the `document` skill's inline
    create-new-cards-with-the-document path; every chart card here was
@@ -329,6 +331,36 @@ an **existing** dashboard (no risk of the whole-array-replace gotcha
    embedded cards, and smart link landed as intended.
 6. Report the Document's id/name back to the user alongside the dashboard
    id/link.
+
+## Add drill-downs (only once the dashboard is finalized)
+
+**Never build these in the same pass as "Assemble the dashboard(s)" above
+— cards, layout, filters, and the documentation Document (if requested)
+must all be finished first.** A drill-down's correctness rests entirely on
+copying its source report card's `dataset_query` exactly as it stands; a
+report that's still changing shape (a filter added, a join adjusted)
+before the user is done drifts the drill-down out of sync the moment it
+changes again — see `prompts/drilldowns.md`'s own opening section for why
+this ordering is non-negotiable, not just a style preference.
+
+1. Once the dashboard (and its documentation Document, if one was
+   requested) is genuinely finalized, ask the user a plain yes/no: "Want
+   me to go ahead and wire drill-downs on this dashboard now?" Never
+   assume yes, and never build any in the same turn as confirming the
+   dashboard's cards/layout.
+2. If declined, skip straight to "Final recap" below — the dashboard
+   stays exactly as assembled, no `click_behavior` added.
+3. If confirmed, build them per `prompts/drilldowns.md` in full (read it
+   before wiring anything, per that file's own instruction) — every
+   qualifying dashcard gets `click_behavior` per CLAUDE.md "Drill-downs",
+   including the dedicated drill-down dashboard approach for any pivot
+   table among them (`prompts/drilldowns.md`'s "Drill-downs for a pivot
+   table").
+4. Run the "Completion audit" checklist at the end of
+   `prompts/drilldowns.md` before reporting this step done.
+5. Verify with `mb dashboard get <id> --json` — confirm every intended
+   `click_behavior` landed and nothing else on the dashboard changed.
+6. Report back which dashcards got wired, to what, and the audit result.
 
 ## Final recap — confirm everything actually landed
 
@@ -355,17 +387,40 @@ takes it:
 - One `dashboard_created` entry per brand-new dashboard assembled (including
   its companion documentation Document's id/name, if the user asked for
   one), or one `dashboard_updated` entry per existing dashboard added to.
+- If drill-downs were built ("Add drill-downs" above): one `chart_created`
+  entry per new drill-down/detail card, plus one `dashboard_updated` entry
+  for the `click_behavior` wiring itself (even when the dashboard was
+  brand-new in this same session — the drill-down wiring is its own later
+  update, logged separately from the original `dashboard_created` entry).
 
 ## Performance tracking
 
-Every requirement-unit built in this session gets a `requirement_pending`
-entry automatically, as part of `prompts/chart-generation.md` step 10 — no
-separate action needed here. Dashboard assembly and a companion
-documentation Document each get their own `requirement_pending` entry too,
-logged when "Assemble the dashboard(s)" / "Add the documentation Document"
-above are verified. An `infeasible_data` or `infeasible_tool_capability`
-outcome is logged immediately, at the point it's determined (see "Resolving
-each requirement" above), not deferred.
+**The "group by shared entity/model" grouping from "Resolving each
+requirement" step 4 above is also the performance-tracking batch
+boundary** — requirements resolved together (same discovery, same
+decisions) get exactly one `requirement_pending`/`requirement_confirmed`
+pair between them, however many numbered charts/cards they decompose into
+(per `references/effort-estimation-rubric.md`'s v2.0 changelog and
+`prompts/performance-tracking.md`'s "Requirement-unit outcomes"). Each
+card's own build-time snapshot is recorded automatically as it's created,
+as part of `prompts/chart-generation.md` step 10 — but **the batch's
+`requirement_pending` entry itself doesn't get appended until this whole
+requirement is actually finished**: every batch feeding the dashboard
+built and verified, the dashboard assembled, **and the drill-downs
+question above resolved one way or the other** (drill-downs are part of
+this requirement, not separate work tracked after the fact — see
+`prompts/performance-tracking.md`'s "Step 1" for exactly why this
+ordering matters). Dashboard assembly still gets its own single
+`requirement_pending` entry (never grouped with a chart batch), also held
+until that same point, for the same reason — its own snapshot is the
+dashboard's `dashcards`, which carries every dashcard's `click_behavior`.
+A companion documentation Document, being a wholly separate Metabase
+entity from the dashboard's own `tabs`/`dashcards`, still gets logged when
+"Add the documentation Document" above is verified — it doesn't need to
+wait on drill-downs the way the dashboard-touching entries do. An
+`infeasible_data` or `infeasible_tool_capability` outcome is logged
+immediately, at the point
+it's determined (see "Resolving each requirement" above), not deferred.
 
 The other side — what the user actually kept versus changed, and what that
 was worth — is a **separate, later confirmation**, not part of this flow's

@@ -539,6 +539,34 @@ This applies to every flow that creates cards, including
 follow this convention on every graph-type card except one bar chart that
 was missing it (fixed).
 
+### Table formatting
+
+Every `display: "table"` card with a date/grain column (a weekly/monthly
+breakdown table, not a plain unaggregated record list) gets this baseline
+polish by default — apply it when building the card, don't leave it for
+the user to add by hand. Confirmed as a real, repeatable standard rather
+than a one-off preference: applied identically, independently, to two
+different tables on account 89060's Cleveland Clinic dashboard (Activity
+Overview, Weekly Outreach) during manual review before this rule existed.
+
+- **Center-align every column** — `column_settings[<column key>].text_align
+  = "middle"` for the date column and every metric column.
+- **Clean up the date column's header and format** —
+  `column_settings["[\"name\",\"<date field>\"]"]` gets `column_title:
+  "Date"` (never the raw field name) and `date_abbreviate: true`.
+- **A subtle row highlight for scannability** —
+  `visualization_settings["table.column_formatting"]` with one rule:
+  `{"columns": [<every metric column name>], "type": "single", "operator":
+  "not-null", "value": "", "color": "#F9F9FA", "highlight_row": true}`.
+- **Set `table.cell_column`** to the table's first metric column — this is
+  what drives Metabase's in-cell mini-bar rendering on that column, giving
+  the table a quick-scan visual reference without adding a separate chart.
+
+This applies to every flow that creates a qualifying table card, including
+`scripts/create_default_dashboard.py` and
+`scripts/create_important_metrics_dashboard.py` — check their table-display
+cards against this the next time either script is touched.
+
 ### Combo chart series display
 
 A combo/stacked chart's series display type is **never safe to leave
@@ -1007,7 +1035,23 @@ judgment independently duplicates real work for no accuracy gain. Instead:
   synchronously blocked on it the way they would be hand-building a query.
   The user's own later manual-fix time is tracked as its own honest number
   (useful for seeing where the tool still falls short) but is never netted
-  against the time-saved figure.
+  against the time-saved figure — **and it must actually be shown, every
+  time**, not just tracked in the log. Any summary reported back to the
+  user — after confirming an entry, or on request — shows a complete
+  metric profile: outcome, comprehension, build, `pct_claude_build`,
+  total time saved, **and the manual-fix figure**, in hours/minutes.
+  Omitting the manual-fix number from a summary is a real gap, not a
+  minor one — confirmed missing once already (account 89060,
+  2026-09-18): the log had it the whole time, the reported summary just
+  never surfaced it. **Report the two side by side, but never as a direct
+  comparison** — they measure different things. Time saved is a
+  standardized benchmark for a generic professional analyst's pace; the
+  manual-fix figure is this specific reviewer's own recall, and whoever
+  reviews this project's work is a professional data analyst with deep,
+  specific context on Recruit CRM, Metabase, and the account's own data —
+  faster than the standardized benchmark assumes, not proof the benchmark
+  is wrong. They're not commensurable, so don't net them, and don't imply
+  one validates or contradicts the other.
 - Questions asked and revision iterations are tracked as their own
   friction metrics — never folded into the time-saved number itself.
 
@@ -1029,6 +1073,29 @@ judgment independently duplicates real work for no accuracy gain. Instead:
   I silently missed (a real gap — also feeds `project-improvements.md`),
   or genuinely new scope that came up afterward (just logged as context,
   no bearing on my handling of the original ask).
+
+**Every `built_modified` card gets root-caused, not just scored.** Scoring
+`pct_claude_build` and moving on does nothing to stop the same manual fix
+being needed on the next similar card — the point of tracking this is to
+shrink `pct_human_build` over time. For every card that came back
+`built_modified`, ask why: a stale/guessed business-term mapping gets
+fixed at the source (`references/metric-glossary.md`, immediately); a
+caveat that wasn't surfaced loudly enough, a missing canonical pattern, or
+a genuinely repeated "cosmetic" preference (check whether the same
+setting shows up on more than one card before calling it a one-off) gets
+logged to `references/project-improvements.md`; a genuinely one-off
+cosmetic choice with nothing to fix gets said so explicitly, not silently
+skipped. Full method in `prompts/performance-tracking.md`'s "Feeding back
+into the project".
+
+**Drill-downs are part of the requirement, not separate work tracked
+after the fact.** A batch's `requirement_pending` entry doesn't get
+logged until the whole requirement is finished — cards built, dashboard
+assembled, and the drill-down yes/no question (see "Drill-downs" below)
+asked and resolved one way or the other. Logging before that point means
+either scoring an incomplete requirement or bolting a second, disjointed
+tracking pass onto it later. Full method in
+`prompts/performance-tracking.md`'s "Step 1".
 
 **Confirmation can happen in a later session.** Check for unconfirmed
 entries early in any session (Step 0 above) and surface them rather than

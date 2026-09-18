@@ -119,6 +119,12 @@ using only fields that were actually discovered — never assumed schema.
      area/row/combo/funnel, `"pie.percent_visibility": "inside"` or
      `"both"` for pie. Tables, pivots, and scalar/smartscalar/progress KPIs
      already show the value directly — nothing to add there.
+   - **A `table`-display card with a date/grain column gets the baseline
+     table-formatting polish by default** — see CLAUDE.md "Table
+     formatting": center-aligned columns, a cleaned-up "Date" column title
+     with abbreviation, a subtle row highlight for scannability, and
+     `table.cell_column` set to the first metric column. Apply this when
+     building the card, don't leave it for the user to add by hand.
    - **Combo chart with a mix of series types (e.g. a per-category
      breakdown plus a total/summary line): set `series_settings.<key>.display`
      explicitly for every series, not just the one that needs to differ from
@@ -159,17 +165,34 @@ Confirm it matches what was intended (query, display, name, collection).
    'Current Pipeline Stage', which ranks each candidate-job pair's stages
    and keeps the furthest one reached") — see CLAUDE.md "Query
    transparency". That dependency is never left for the user to notice on
-   their own. **If this card's underlying construction (joins, ranking/
+   their own. **If any field/value mapping this card relies on traces back
+   to a `references/metric-glossary.md` entry tagged `Status: caveat`**
+   (a substituted value, thin data, anything flagged as worth reconfirming)
+   say so explicitly in this same report — e.g. "built on the confirmed
+   substitute for 'Final Interview Completed', which has only 3 records
+   account-wide — expect thin/near-zero results until the client corrects
+   which stage they mean." Don't leave a caveat implicit in the glossary
+   for the user to discover only once the live number looks wrong —
+   surfacing it here is what lets them make an informed call immediately
+   instead of live-editing the card to rediscover it (confirmed
+   worth doing after account 89060's Final Interviews to Accepts card took
+   two rounds of manual edits to reach a decision the user could have made
+   at report time — see `references/project-improvements.md`,
+   2026-09-18). **If this card's underlying construction (joins, ranking/
    summarize logic) is genuinely reusable beyond this one chart** — not a
    true one-off — record it in `references/canonical-patterns.md` per that
    file's "Adding a new pattern" section before moving on.
 9. Append one `chart_created` entry to `logs/history.jsonl` for this card
    (see CLAUDE.md "History log" for the exact schema).
-10. Append one `requirement_pending` entry to `logs/performance-tracking.jsonl`
-    for this requirement-unit, including a snapshot of this card's
-    `dataset_query`/`visualization_settings`/`click_behavior` — see
-    `prompts/performance-tracking.md` for the exact schema and the
-    comprehension/build scoring against `references/effort-estimation-rubric.md`.
+10. Record this card's own build-time snapshot (`dataset_query`/
+    `visualization_settings`/`click_behavior`, plus its
+    `build_elements_snapshot`/`build_minutes_snapshot`) into the current
+    resolution batch's accumulating `cards` list — don't append a
+    `logs/performance-tracking.jsonl` entry per card. The batch's single
+    `requirement_pending` entry gets appended once, after every card in the
+    batch is built and verified — see `prompts/performance-tracking.md`
+    ("Step 1") for the exact schema and the comprehension/build scoring
+    against `references/effort-estimation-rubric.md`.
 
 ## If creation isn't possible
 
