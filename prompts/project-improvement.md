@@ -4,8 +4,8 @@ A **separate, on-demand review — not an automatic step that runs after
 every task.** Only run this when the user explicitly asks for it (e.g.
 "any project improvement ideas?", "suggest an improvement", "review the
 backlog"). Produce a short, concrete suggestion for improving the project
-itself: `prompts/`, `references/`, `scripts/`, `config/`, or CLAUDE.md's
-own guardrails.
+itself: `prompts/`, `references/`, `scripts/`, `config/`, `README.md`,
+`docs/`, or CLAUDE.md's own guardrails.
 
 This exists to turn what sessions actually run into over time into a
 standing backlog this project can act on later — not a pleasantry recited
@@ -24,14 +24,19 @@ suggestion on that task.
 
 Instead, base every suggestion here on an actual pass over the **project
 repository itself**: (re-)read `CLAUDE.md` in full and check it against
-`prompts/`, `references/`, `scripts/`, `config/`, and this machine's own
-`logs/history.jsonl` for a real gap, contradiction, drift, or missed
-opportunity — e.g. a rule CLAUDE.md states that a script doesn't actually
-implement, two files describing the same convention slightly differently,
-a `references/*.md` entry that's gone stale against what a script or
-prompt now does, a script whose docstring no longer matches its own
-behavior, or a footgun/skip/failure that `logs/history.jsonl` shows
-actually happened but the rest of the repo doesn't yet account for.
+`prompts/`, `references/`, `scripts/`, `config/`, `README.md`, `docs/`, and
+this machine's own `logs/history.jsonl` for a real gap, contradiction,
+drift, or missed opportunity — e.g. a rule CLAUDE.md states that a script
+doesn't actually implement, two files describing the same convention
+slightly differently, a `references/*.md` entry that's gone stale against
+what a script or prompt now does, a script whose docstring no longer
+matches its own behavior, `README.md`/`docs/` describing a narrower scope
+than what CLAUDE.md's flows and `logs/history.jsonl` show is actually
+built (e.g. a stale "chart recommendations only" framing left over from
+before Default Dashboard/Important Metrics Dashboard automation,
+drill-downs, or Documents existed), or a footgun/skip/failure that
+`logs/history.jsonl` shows actually happened but the rest of the repo
+doesn't yet account for.
 `logs/history.jsonl` is git-committed and shared across the team (per
 CLAUDE.md's "History log") — read it in full as part of the pass. If it's
 empty (a genuinely new project with no workflows run yet), that's not itself

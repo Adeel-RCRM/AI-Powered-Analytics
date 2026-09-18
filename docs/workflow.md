@@ -8,7 +8,9 @@ reading it rather than for Claude executing it.
    account", "recommend charts", or "create analytics".
 3. Claude checks Metabase CLI configuration first (`mb auth list`/`status`).
    If nothing is configured, it will tell you exactly what to run — see
-   README.md.
+   README.md. It also surfaces any Requirements Intake outcome still
+   awaiting your confirmation from a prior session (see "Performance
+   tracking" at the end of this file) before moving on.
 4. Claude asks which kind of work you want:
    - **Requirements Intake** — you share chart/dashboard requirements
      directly, in whatever form you have them: a written ask, a numbered
@@ -61,6 +63,9 @@ reading it rather than for Claude executing it.
    creates every one presented); confirmed charts are created as individual
    cards directly in whichever collection was chosen at step 2 (under the
    account's own collection, they go in its "Cards" sub-collection instead).
+   The first time a confirmed chart needs to show a monetary value, Claude
+   asks which currency this account bills in (never assuming a dollar sign)
+   and records the answer so it's only asked once per account.
 9. Claude decides where the charts land: a dashboard you already named, an
    existing dashboard it asks you about if its own duplicate-check turns up
    one that plausibly already covers the same ground (scoped to that same
@@ -120,6 +125,19 @@ reading it rather than for Claude executing it.
    Metrics Dashboard Cards".
 4. If the script fails or skips, Claude relays that plainly rather than
    forcing something.
+
+## Performance tracking (Requirements Intake only)
+
+Separately from the audit trail above, Claude scores how much of each
+Requirements Intake requirement it genuinely handled itself vs. what you
+ended up changing by hand — comprehension/build effort scored against a
+rubric, and actual changes found by diffing the created card's query/
+visualization against what it looks like once you say your own manual pass
+is done (which can happen in a later session; Claude checks for and
+surfaces anything still pending at the start of the next one). This never
+affects what gets built — it's purely a record for measuring the tool's own
+contribution over time. Logged to `logs/performance-tracking.jsonl`; see
+CLAUDE.md's "Performance tracking" section for the full method.
 
 ## In every flow
 

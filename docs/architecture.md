@@ -15,6 +15,10 @@ Claude (this conversation, in VS Code)
 mb auth list / status        (verify Metabase CLI config)
   |
   v
+Surface any unconfirmed performance-tracking entries (see "Performance
+tracking" below), then:
+  |
+  v
 Ask which kind of work: Requirements Intake /
                          Default Dashboard / Important Metrics Dashboard
   |
@@ -154,6 +158,29 @@ CLAUDE.md's "standing knowledge" section for the full rules, including how a
 candidate's current pipeline stage is determined (ordinal `CASE` ranking,
 never `MAX(stage_date)`).
 
+Account **662** is the standing internal test account (all 12 core tables
+documented in `references/schema-map.md`), but it also carries real
+pre-existing client content — so test output never lands in its top-level
+collection directly. Both dashboard scripts accept `--test-collection-id
+27635` to redirect everything (dashboard, Cards, Models, Drill-downs) into
+the dedicated "AI Analytics Test Folder (Do Not Touch)" sub-collection
+instead. See CLAUDE.md's "Locating the account's data" for the full
+convention.
+
+## Performance tracking
+
+Scoped to Requirements Intake only (Default Dashboard and Important Metrics
+Dashboard are fixed templates with no per-requirement judgment to score).
+Each requirement-unit is scored against `references/effort-estimation-rubric.md`
+for comprehension/build effort, the created card's query/visualization JSON
+is snapshotted at creation time, and — once the user confirms their own
+manual pass is done, possibly in a later session — re-diffed against the
+live card to score what was actually kept vs. changed, rather than relying
+on self-reported time. Logged to `logs/performance-tracking.jsonl`. Every
+session's Step 0 checks for outcomes still awaiting that confirmation and
+surfaces them before starting new work. See CLAUDE.md's "Performance
+tracking" section and `prompts/performance-tracking.md` for the full method.
+
 ## Files
 
 - `CLAUDE.md` — persistent operating instructions (read first, every time),
@@ -164,15 +191,23 @@ never `MAX(stage_date)`).
   `requirements-intake.md` (Requirements Intake flow: stated ask / transcript
   / document, in any combination, through dashboard destination, assembly,
   and an optional companion documentation Document), `drilldowns.md` (the
-  full drill-down method), and `infeasible-requirement.md`
-  (shared handling for a requirement the data can't support)
+  full drill-down method), `infeasible-requirement.md`
+  (shared handling for a requirement the data can't support),
+  `performance-tracking.md` (Requirements-Intake-only: scores comprehension/
+  build effort and diffs what the user later changed — see "Performance
+  tracking" below), `project-improvement.md` (on-demand review of the
+  project's own files), and `metabase_skill_improvement.md` (legacy,
+  superseded — see its own header note)
 - `references/` — `schema-map.md` (structural, metadata-only map of the core
   tables), `metric-glossary.md` (business-term definitions confirmed by the
   user, per account), `canonical-patterns.md` (reusable, verified chart/query
   shapes), `schema-discrepancies.md` (a durable landing spot for a flagged
-  structural discrepancy not resolved in-session), and
+  structural discrepancy not resolved in-session),
   `visual-design-standards.md` (the house color palette and consistency
-  conventions) — checked before falling back to live discovery
+  conventions), `effort-estimation-rubric.md` (the versioned rubric
+  `performance-tracking.md` scores against), and `project-improvements.md`
+  (team-shared process-improvement backlog) — the first five checked before
+  falling back to live discovery
 - `config/analysis-config.md` — tunable defaults (data-quality thresholds,
   chart-type defaults)
 - `docs/workflow.md` — the same flows, written for a human teammate
@@ -195,3 +230,6 @@ never `MAX(stage_date)`).
 - `logs/history.jsonl` — shared, git-committed, append-only audit trail of
   what was analyzed/recommended/created; enforced by hooks in
   `.claude/settings.json` for the Requirements Intake flow
+- `logs/performance-tracking.jsonl` — shared, git-committed, append-only log
+  of Requirements Intake effort estimates and actual outcomes (see
+  "Performance tracking" below)

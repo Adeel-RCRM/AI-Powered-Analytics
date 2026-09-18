@@ -130,6 +130,8 @@ prompts/
   drilldowns.md              Full drill-down method: click_behavior shapes, gotchas, completion audit
   infeasible-requirement.md  How to handle a requirement the account's real data can't support
   project-improvement.md     On-demand review of the project's own files for drift/gaps
+  performance-tracking.md    Requirements Intake only: scores comprehension/build effort and diffs
+                              what the user later changed, to measure real time saved
   metabase_skill_improvement.md  Legacy bootstrapping prompt from an earlier skill architecture (see its
                               own header note) — superseded by CLAUDE.md's discovery/glossary/
                               canonical-patterns flow
@@ -143,6 +145,7 @@ references/
   schema-discrepancies.md    Durable landing spot for a flagged structural discrepancy
   visual-design-standards.md House color palette and dashboard consistency conventions
   project-improvements.md    Team-shared backlog of process/consistency suggestions
+  effort-estimation-rubric.md Versioned rubric performance-tracking.md scores comprehension/build effort against
 scripts/
   mb-login.sh                                    One-time helper: .env -> mb auth login
   create_default_dashboard.py                    Automates the Default Dashboard flow end-to-end
@@ -151,6 +154,8 @@ scripts/
   important_metrics_dashboard_template.json      Fixed chart set the Important Metrics Dashboard flow replicates
 logs/
   history.jsonl              Shared, git-committed, append-only audit trail (see CLAUDE.md "History log")
+  performance-tracking.jsonl Shared, git-committed, append-only Requirements Intake effort/outcome log
+                              (see CLAUDE.md "Performance tracking")
 ```
 
 ## Security
@@ -178,11 +183,12 @@ dry-run validated (never executed) before creation.
 ## Related Claude Code skills (not used by this workflow today)
 
 This repo's workflow only needs the `metabase-cli` skill (driving `mb` for
-discovery/analysis/chart-creation). If Claude Code is installed with the
-broader Metabase skill set, the following are also available and may become
-relevant if this project's scope ever expands beyond chart recommendations
-(e.g. into embedding Metabase content in another app). They are optional —
-Claude will only invoke one if the task genuinely calls for it:
+discovery, chart/dashboard creation, drill-downs, and Documents). If Claude
+Code is installed with the broader Metabase skill set, the following are
+also available and may become relevant if this project's scope ever expands
+beyond building and maintaining charts/dashboards against this Metabase
+instance (e.g. into embedding Metabase content in another app). They are
+optional — Claude will only invoke one if the task genuinely calls for it:
 
 - `metabase-database-metadata` — read/edit the YAML Database Metadata Format
   synced from a Metabase instance.
