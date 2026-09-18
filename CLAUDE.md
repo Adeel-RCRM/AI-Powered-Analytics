@@ -103,6 +103,10 @@ verification" below). Run the verification calls (`mb auth list`, `mb auth
 status`) directly in the main conversation. If it fails, stop and tell the
 user exactly what to fix. Do not proceed to Step 0.5 on broken config.
 
+Once configuration is verified, also check for unconfirmed performance
+tracking: see "Performance tracking" below's "Pending-entry check" — surface
+anything awaiting confirmation before moving to Step 0.5.
+
 **Step 0.5 — Ask which kind of work to do.**
 Once configuration is verified, ask via `AskUserQuestion` (3 discrete
 options — this is what that tool is for, unlike Step 2's entity list below):
@@ -956,6 +960,81 @@ an analysis that had to be skipped for insufficient data) is fine to log too
 with a descriptive `type` — the events above aren't an exhaustive list, just
 the required minimum.
 
+## Performance tracking
+
+Tracks Requirements Intake's actual contribution against manual work, so
+progress against `docs/vision.md`'s goals is measurable over time, not
+asserted. Scoped to Requirements Intake only — the Default Dashboard and
+Important Metrics Dashboard flows are fixed templates with no
+per-requirement resolution judgment to score. Full method in
+`prompts/performance-tracking.md` — read it in full before touching any of
+this; the rules below are the summary, not the whole of it.
+
+This is a **separate, distinct log from `logs/history.jsonl`**
+(`logs/performance-tracking.jsonl`) — history is an audit trail of what was
+built; this is an assessment of how much of it was genuinely mine versus
+the user's, and what that was worth in time. Same git-committed,
+append-only, never-edit-a-line-in-place discipline as the history log.
+
+**Every Requirements Intake requirement-unit gets logged, regardless of
+outcome** — built cleanly, built and later modified, infeasible for data
+reasons, infeasible for this project's current capability, or covered by a
+card the user ended up building by hand. Nothing is dropped from this
+record just because the outcome wasn't a clean success.
+
+**Never ask the user to estimate a hypothetical full-manual-build time.**
+Estimating that well requires the same requirement analysis this project
+has already done to build the thing — asking the user to redo that
+judgment independently duplicates real work for no accuracy gain. Instead:
+
+- **Comprehension time** (figuring out what needs to be built) and **build
+  time** (actually building it) are both estimated by scoring the real,
+  structural shape of what was discovered/built against
+  `references/effort-estimation-rubric.md` — never a flat per-chart-type
+  average, never a chart count. The rubric is versioned, so a logged entry
+  always records which version scored it, and it's expected to be
+  recalibrated over time (see that file's "Keeping this rubric honest").
+- **What the user actually changed is determined by diffing**, not
+  self-report: the exact query/visualization JSON is snapshotted the
+  moment a card is created, and re-compared against the live card once the
+  user confirms their manual pass is done. Only what the diff can't tell
+  you (how long the fix took, whether an extra card was needed) is
+  actually asked.
+- Credit is granular, not all-or-nothing: a card the user only tweaked one
+  filter on keeps most of its build-time credit; one rebuilt from scratch
+  keeps none.
+- **My own working time is never counted as time spent** — the user isn't
+  synchronously blocked on it the way they would be hand-building a query.
+  The user's own later manual-fix time is tracked as its own honest number
+  (useful for seeing where the tool still falls short) but is never netted
+  against the time-saved figure.
+- Questions asked and revision iterations are tracked as their own
+  friction metrics — never folded into the time-saved number itself.
+
+**Outcomes, and what each one means:**
+- `built_clean` — shipped exactly as built. Full comprehension + build
+  credit.
+- `built_modified` — the user changed something. Credit is scored from the
+  diff, per the granular rule above.
+- `infeasible_data` — the account's data couldn't support it (per
+  `prompts/infeasible-requirement.md`). Not a miss on this project's
+  part — full comprehension credit (diagnosing this is real work), zero
+  build credit.
+- `infeasible_tool_capability` — a genuine gap: this would need a
+  code/prompt change to this project itself, so it wasn't attempted. Zero
+  credit either way, and it feeds `references/project-improvements.md`
+  (see "Project improvement review" below).
+- `extra_manual_addition` — the user built something beyond what I
+  produced. Ask which kind it is: covering part of the *original* ask that
+  I silently missed (a real gap — also feeds `project-improvements.md`),
+  or genuinely new scope that came up afterward (just logged as context,
+  no bearing on my handling of the original ask).
+
+**Confirmation can happen in a later session.** Check for unconfirmed
+entries early in any session (Step 0 above) and surface them rather than
+relying on the user to remember — see `prompts/performance-tracking.md`'s
+"Pending-entry check".
+
 ## Recruit CRM / Metabase data model — standing knowledge
 
 These rules apply across **every** Recruit CRM account in this Metabase
@@ -1254,6 +1333,12 @@ becomes part of a standing, **team-shared** backlog — a suggestion any
 teammate's session surfaces is visible to everyone, the same as
 `logs/history.jsonl`'s own event entries are now that both files are
 git-committed.
+
+This is distinct from an `infeasible_tool_capability` or
+missed-original-requirement `extra_manual_addition` outcome from
+"Performance tracking" above automatically feeding an entry here — that
+happens as part of Requirements Intake itself, the moment the outcome is
+determined, not as part of this on-demand review.
 
 ## Style
 

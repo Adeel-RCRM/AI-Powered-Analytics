@@ -152,6 +152,18 @@ the requirement's definition rests on doesn't hold in the real data — follow
 first, then draft a customer-ready explanation. Don't fabricate or
 approximate it, and don't silently drop it either.
 
+**A different case: the data genuinely supports the requirement, but
+building it is beyond what this project's current prompts/scripts/patterns
+can produce** — not a missing table/field or a bad assumption, but a
+genuine capability gap in this project itself (e.g. logic no combination of
+MBQL, native SQL, and this project's documented patterns can express).
+Don't force a broken or misleading approximation to avoid saying so — tell
+the user plainly that this one needs a prompt/code change to the project
+before it can be built, and log it immediately as its own outcome per
+`prompts/performance-tracking.md` (`infeasible_tool_capability`) — distinct
+from a data-infeasibility case, since this one reflects on the tool, not
+the account's data.
+
 ## Output format — numbered list
 
 Present every requirement that resolved to a buildable chart as a numbered
@@ -343,3 +355,20 @@ takes it:
 - One `dashboard_created` entry per brand-new dashboard assembled (including
   its companion documentation Document's id/name, if the user asked for
   one), or one `dashboard_updated` entry per existing dashboard added to.
+
+## Performance tracking
+
+Every requirement-unit built in this session gets a `requirement_pending`
+entry automatically, as part of `prompts/chart-generation.md` step 10 — no
+separate action needed here. Dashboard assembly and a companion
+documentation Document each get their own `requirement_pending` entry too,
+logged when "Assemble the dashboard(s)" / "Add the documentation Document"
+above are verified. An `infeasible_data` or `infeasible_tool_capability`
+outcome is logged immediately, at the point it's determined (see "Resolving
+each requirement" above), not deferred.
+
+The other side — what the user actually kept versus changed, and what that
+was worth — is a **separate, later confirmation**, not part of this flow's
+own output. Full method in `prompts/performance-tracking.md`; don't attempt
+to ask its confirmation questions inline here, before the user has had any
+chance to make manual changes in Metabase.

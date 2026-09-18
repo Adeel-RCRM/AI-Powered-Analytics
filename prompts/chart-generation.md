@@ -165,6 +165,11 @@ Confirm it matches what was intended (query, display, name, collection).
    file's "Adding a new pattern" section before moving on.
 9. Append one `chart_created` entry to `logs/history.jsonl` for this card
    (see CLAUDE.md "History log" for the exact schema).
+10. Append one `requirement_pending` entry to `logs/performance-tracking.jsonl`
+    for this requirement-unit, including a snapshot of this card's
+    `dataset_query`/`visualization_settings`/`click_behavior` — see
+    `prompts/performance-tracking.md` for the exact schema and the
+    comprehension/build scoring against `references/effort-estimation-rubric.md`.
 
 ## If creation isn't possible
 
