@@ -157,7 +157,9 @@
           }
         ]
       },
-      "visualization_settings": {},
+      "visualization_settings": {
+        "scalar.switch_positive_negative": true
+      },
       "field_names": {
         "1868040": "created_on",
         "1868039": "cost_in_currency"
@@ -326,7 +328,8 @@
         },
         "graph.metrics": [
           "count"
-        ]
+        ],
+        "graph.label_value_frequency": "fit"
       },
       "field_names": {
         "1868040": "created_on",
@@ -427,7 +430,8 @@
           "call_type",
           "created_on"
         ],
-        "stackable.stack_type": "stacked"
+        "stackable.stack_type": "stacked",
+        "graph.label_value_frequency": "fit"
       },
       "field_names": {
         "1868040": "created_on",
@@ -531,7 +535,13 @@
         "graph.dimensions": [
           "related_company_name"
         ],
-        "stackable.stack_type": null
+        "stackable.stack_type": null,
+        "graph.label_value_frequency": "fit",
+        "series_settings": {
+          "count": {
+            "color": "#2a78d6"
+          }
+        }
       },
       "field_names": {
         "1868026": "id",
@@ -1160,7 +1170,13 @@
         },
         "graph.metrics": [
           "count"
-        ]
+        ],
+        "graph.label_value_frequency": "fit",
+        "series_settings": {
+          "count": {
+            "color": "#2a78d6"
+          }
+        }
       },
       "field_names": {
         "1878033": "id",
@@ -1327,7 +1343,8 @@
             "number_style": "percent"
           }
         },
-        "graph.show_values": true
+        "graph.show_values": true,
+        "graph.label_value_frequency": "fit"
       },
       "field_names": {
         "1866372": "id",
@@ -1880,7 +1897,13 @@
         "column_settings": {},
         "graph.metrics": [
           "sum"
-        ]
+        ],
+        "graph.label_value_frequency": "fit",
+        "series_settings": {
+          "sum": {
+            "color": "#2a78d6"
+          }
+        }
       },
       "field_names": {
         "1876180": "company_name",
@@ -2037,7 +2060,22 @@
           "sum_2",
           "sum_3",
           "sum_4"
-        ]
+        ],
+        "graph.label_value_frequency": "fit",
+        "series_settings": {
+          "sum": {
+            "color": "#2a78d6"
+          },
+          "sum_2": {
+            "color": "#eb6834"
+          },
+          "sum_3": {
+            "color": "#1baf7a"
+          },
+          "sum_4": {
+            "color": "#eda100"
+          }
+        }
       },
       "field_names": {
         "1872802": "company_name",
@@ -2370,6 +2408,12 @@
           "[\"name\",\"created_on\"]": {
             "date_abbreviate": true
           }
+        },
+        "graph.label_value_frequency": "fit",
+        "series_settings": {
+          "count": {
+            "color": "#2a78d6"
+          }
         }
       },
       "field_names": {
@@ -2441,6 +2485,12 @@
         "column_settings": {
           "[\"name\",\"created_on\"]": {
             "date_abbreviate": true
+          }
+        },
+        "graph.label_value_frequency": "fit",
+        "series_settings": {
+          "count": {
+            "color": "#2a78d6"
           }
         }
       },
@@ -2529,7 +2579,13 @@
           "source"
         ],
         "column_settings": {},
-        "graph.metrics": []
+        "graph.metrics": [],
+        "graph.label_value_frequency": "fit",
+        "series_settings": {
+          "count": {
+            "color": "#2a78d6"
+          }
+        }
       },
       "field_names": {
         "1870740": "source",
@@ -2601,7 +2657,13 @@
           "stage"
         ],
         "column_settings": {},
-        "graph.metrics": []
+        "graph.metrics": [],
+        "graph.label_value_frequency": "fit",
+        "series_settings": {
+          "count": {
+            "color": "#2a78d6"
+          }
+        }
       },
       "field_names": {
         "1874501": "stage",
@@ -2703,7 +2765,13 @@
         },
         "graph.metrics": [
           "sum"
-        ]
+        ],
+        "graph.label_value_frequency": "fit",
+        "series_settings": {
+          "sum": {
+            "color": "#2a78d6"
+          }
+        }
       },
       "field_names": {
         "1876171": "deal_stage",

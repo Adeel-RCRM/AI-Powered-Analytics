@@ -104,14 +104,19 @@ Every flow appends to logs/history.jsonl (shared, git-committed,
 append-only) and results are returned to the user in the terminal.
 ```
 
-A `.claude/settings.json` hook enforces the history-log step for the
-conversational flow (Requirements Intake) that creates/updates
-cards/dashboards directly in the conversation: it flags (via a `Stop` hook)
-if `mb card create` / `mb dashboard create` / `mb dashboard update` ran but
-`logs/history.jsonl` was never appended to before the session ends. The
-Default Dashboard and Important Metrics Dashboard scripts log themselves in
-code instead (see `scripts/create_default_dashboard.py` and
-`scripts/create_important_metrics_dashboard.py`).
+A local, per-developer `.claude/settings.json` hook can enforce the
+history-log step for the conversational flow (Requirements Intake) that
+creates/updates cards/dashboards directly in the conversation: it flags (via
+a `Stop` hook) if `mb card create` / `mb dashboard create` / `mb dashboard
+update` ran but `logs/history.jsonl` was never appended to before the
+session ends. This file is git-ignored — it's a personal convenience each
+teammate sets up on their own machine, not something this project
+distributes or enforces centrally, so don't assume it's present in every
+session or on every clone of this repo. The Default Dashboard and Important
+Metrics Dashboard scripts log themselves in code instead (see
+`scripts/create_default_dashboard.py` and
+`scripts/create_important_metrics_dashboard.py`), so they don't depend on
+this hook either way.
 
 ## What does not exist here
 
@@ -191,7 +196,10 @@ tracking" section and `prompts/performance-tracking.md` for the full method.
   `requirements-intake.md` (Requirements Intake flow: stated ask / transcript
   / document, in any combination, through dashboard destination, assembly,
   and an optional companion documentation Document), `drilldowns.md` (the
-  full drill-down method), `infeasible-requirement.md`
+  full drill-down method), `documentation.md` (the companion Document
+  method: grounding every chart explanation in its real `dataset_query`,
+  per-chart filter/drill-down applicability, known Metabase card-cloning
+  gotchas), `infeasible-requirement.md`
   (shared handling for a requirement the data can't support),
   `performance-tracking.md` (Requirements-Intake-only: scores comprehension/
   build effort and diffs what the user later changed — see "Performance
@@ -203,7 +211,8 @@ tracking" section and `prompts/performance-tracking.md` for the full method.
   user, per account), `canonical-patterns.md` (reusable, verified chart/query
   shapes), `schema-discrepancies.md` (a durable landing spot for a flagged
   structural discrepancy not resolved in-session),
-  `visual-design-standards.md` (the house color palette and consistency
+  `visual-design-standards.md` (the house design system: color, dashboard
+  layout hierarchy, form-selection guardrails, and consistency
   conventions), `effort-estimation-rubric.md` (the versioned rubric
   `performance-tracking.md` scores against), and `project-improvements.md`
   (team-shared process-improvement backlog) — the first five checked before
@@ -228,8 +237,9 @@ tracking" section and `prompts/performance-tracking.md` for the full method.
   charts the Important Metrics Dashboard flow replicates onto each
   account's own data
 - `logs/history.jsonl` — shared, git-committed, append-only audit trail of
-  what was analyzed/recommended/created; enforced by hooks in
-  `.claude/settings.json` for the Requirements Intake flow
+  what was analyzed/recommended/created; a local, per-developer
+  `.claude/settings.json` hook (git-ignored, not distributed by this repo)
+  can optionally enforce this for the Requirements Intake flow
 - `logs/performance-tracking.jsonl` — shared, git-committed, append-only log
   of Requirements Intake effort estimates and actual outcomes (see
   "Performance tracking" below)

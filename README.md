@@ -128,6 +128,9 @@ prompts/
                               (new or existing), optionally with a companion
                               documentation Document
   drilldowns.md              Full drill-down method: click_behavior shapes, gotchas, completion audit
+  documentation.md            Dashboard documentation Document: TipTap body shape, grounding chart
+                              explanations in real dataset_query, per-chart filter/drill-down
+                              applicability, card-cloning gotchas
   infeasible-requirement.md  How to handle a requirement the account's real data can't support
   project-improvement.md     On-demand review of the project's own files for drift/gaps
   performance-tracking.md    Requirements Intake only: scores comprehension/build effort and diffs
@@ -143,7 +146,7 @@ references/
   metric-glossary.md         Business-term definitions confirmed by the user, per account
   canonical-patterns.md      Reusable, verified chart/query shapes
   schema-discrepancies.md    Durable landing spot for a flagged structural discrepancy
-  visual-design-standards.md House color palette and dashboard consistency conventions
+  visual-design-standards.md House design system: color, dashboard layout hierarchy, form selection, KPI conventions
   project-improvements.md    Team-shared backlog of process/consistency suggestions
   effort-estimation-rubric.md Versioned rubric performance-tracking.md scores comprehension/build effort against
 scripts/

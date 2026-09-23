@@ -114,6 +114,21 @@ For each requirement, in this order:
    once — work out shared query/model logic once rather than per chart.
 5. Check for duplicates the same way as CLAUDE.md's "Avoiding duplicate
    charts" — flag a match instead of silently recreating it.
+6. **A requirement mentioning a time grain or trend** ("broken down by
+   week/month/year", "trend over time", "how X has changed") **needs an
+   actual date breakout in the query's grain — not just a flat "metric by
+   category" aggregate with no time dimension.** Add a `breakout` on the
+   relevant date field at the grain the requirement implies (day/week/
+   month/quarter/year), per the `mbql` skill. When more than one card on
+   the same dashboard would benefit from an adjustable grain, consider
+   wiring a dashboard **`temporal-unit`** parameter instead of hardcoding
+   one grain per card (per the `dashboard` skill's "Time-grouping
+   parameters" — it binds only to a datetime column in the query's *last*
+   stage, so add it before, not after, a time-bucketed summary). Missing
+   this reduces a stated trend/time-series ask to an unordered
+   category-only bar chart with no time dimension at all — the exact
+   regression that happened on account 92840's Owner Activity dashboard
+   (`references/project-improvements.md`, 2026-09-17 entry).
 
 ## When to actually ask a question
 
@@ -287,6 +302,20 @@ Then, on that dashboard:
 
 ## Add the documentation Document (only if the user asks for one)
 
+**Documentation-only request.** If the user's entire ask is a companion
+Document for a dashboard that already exists — no new chart/card work at
+all, e.g. "add a guide to the existing X dashboard" — skip "Extracting
+requirements" through "Add drill-downs" above entirely: there's nothing to
+resolve or build. Still do Intake step 1 (confirm the account) if it isn't
+already established, and confirm the named dashboard actually exists
+(`mb dashboard get <id>`), but **skip Intake step 2's Data Team WIP-vs-
+account-collection question** — it decides where *new* content lands, and
+this creates no new cards or dashboards; the Document's collection is
+already decided below (same collection as the dashboard it documents). Then
+come straight to this section. Log it as a standalone `documentation_created`
+entry per "Logging" below, not folded into a `dashboard_created`/
+`dashboard_updated` entry — there isn't one in this pass.
+
 Ask the user whether they'd like a companion documentation Document (a plain
 yes/no) before building one — never add it unprompted. If the user declines
 for a given dashboard, skip straight to "Logging" below for that
@@ -295,11 +324,14 @@ are already finalized without it.
 
 If they say yes, create one Metabase **Document** per dashboard just created
 or added to (per CLAUDE.md "Dashboard documentation" — load the `document`
-skill for the exact TipTap/ProseMirror body shape). This is a **separate
-Metabase entity, not a tab on the dashboard** — it never touches the
-dashboard's own `tabs`/`dashcards`, which matters especially when adding to
-an **existing** dashboard (no risk of the whole-array-replace gotcha
-`prompts/drilldowns.md` warns about for dashboard updates):
+skill for the exact TipTap/ProseMirror body shape, and read
+`prompts/documentation.md` in full for the grounding method and known
+gotchas below — this section is the summary, not the whole of it). This is
+a **separate Metabase entity, not a tab on the dashboard** — it never
+touches the dashboard's own `tabs`/`dashcards`, which matters especially
+when adding to an **existing** dashboard (no risk of the
+whole-array-replace gotcha `prompts/drilldowns.md` warns about for
+dashboard updates):
 
 1. Name it **"<Dashboard Name> Guide"**, in the same collection as the
    dashboard it documents (per "Where created charts live" in CLAUDE.md),
@@ -308,25 +340,70 @@ an **existing** dashboard (no risk of the whole-array-replace gotcha
    - A **Purpose** section (heading + paragraph) — why this dashboard
      exists, tied to the requirement(s) that drove it — with a `smartLink`
      (`model: "dashboard"`) near the top pointing at the live dashboard.
+     Ground this in an actual recorded requirement (this flow's own
+     `recommendations_presented` history entry, or the stated ask earlier
+     in this conversation) — never an assumed audience/motivation the
+     chart selection alone doesn't support.
    - One section per chart (or closely related group) — a heading, a
      plain-language paragraph (no field names, no SQL) explaining what it
      shows and why it matters, and the chart itself embedded live right
      next to it (`cardEmbed` referencing the same card id already created,
-     wrapped in a `resizeNode` at a modest height — 300-400px).
+     wrapped in a `resizeNode` at a modest height — 300-400px). **Pull
+     each card's actual `dataset_query` first** (`mb card get --full`,
+     walking into any `source-card` it's built on) and ground every
+     sentence in what it actually computes — never infer meaning from the
+     chart's name/display type alone, and never add causal/comparative
+     narrative between charts unless the user or source material stated
+     it directly. Full method: `prompts/documentation.md`'s "Ground every
+     chart explanation in its real query."
    - A **How to use it** section — the dashboard's filters, explained in
-     plain terms. **Drill-downs are wired *after* this Document is
-     created** (see "Add drill-downs" below — documentation comes first),
-     so don't describe specific click-through behavior that doesn't exist
-     yet; a static document can't demonstrate a click either way. Point
-     back to the live dashboard (via the same `smartLink`) for "try it
-     yourself" — that's accurate whether or not drill-downs end up added
-     later, and stays correct without needing an update if they are.
+     plain terms, **pulled from the dashboard's actual `parameters` list
+     and each dashcard's real `parameter_mappings`** — don't assume every
+     filter reaches every chart; state exceptions plainly (a filter can be
+     unmapped on a given card, or a trend chart's date breakout can be
+     hardcoded with no `temporal-unit` parameter mapped at all). Full
+     method: `prompts/documentation.md`'s "Determine per-chart filter
+     applicability." **In this flow's normal sequencing, drill-downs are
+     wired *after* this Document is created** (see "Add drill-downs"
+     below — documentation comes first), so on a fresh Requirements Intake
+     pass, don't describe specific click-through behavior that doesn't
+     exist yet; a static document can't demonstrate a click either way.
+     Point back to the live dashboard (via the same `smartLink`) for "try
+     it yourself" — that's accurate whether or not drill-downs end up
+     added later, and stays correct without needing an update if they are.
+     **If the dashboard already has drill-downs wired at the time this
+     Document is being built or revised** — the common case for an
+     existing dashboard from an earlier session, or a Document being
+     rebuilt later — the opposite applies: pull each dashcard's real
+     `click_behavior`, resolve its actual target by name, and state what
+     carries through, per `prompts/documentation.md`'s "Describe each
+     chart's drill-down from its real `click_behavior`." Check
+     `dashcards[].visualization_settings.click_behavior` (and per-column
+     `column_settings`) before assuming there's nothing to describe. **Then
+     open the destination card/dashboard itself and check for a further
+     layer before writing the description as finished** — a detail table's
+     own columns routinely carry a second click (a "Profile" column whose
+     value is a live external URL into Recruit CRM, not another Metabase
+     view — confirm with one real row via `mb card query`, don't assume),
+     and a drill-down-to-a-dashboard case adds its own filter panel as a
+     distinct step on top of that. State the real number of steps per
+     section — it can genuinely differ across one dashboard's own sections
+     — per `prompts/documentation.md`'s "Don't stop at the first hop"
+     subsection.
 3. Only embed cards that already exist (a plain positive `id` in
    `cardEmbed`) — don't use the `document` skill's inline
    create-new-cards-with-the-document path; every chart card here was
    already built, verified, and logged per `prompts/chart-generation.md`.
+   **Expect Metabase to clone every embedded card into a new
+   document-owned copy anyway** (intended product behavior, confirmed in
+   `prompts/documentation.md`'s gotchas log) — harmless on the first
+   `create`, but if a **later** `mb document update` on the same document
+   is needed, re-fetch the live document first and reuse its real
+   clone-card ids, never the original source-card ids again, or the update
+   mints a fresh set of clones and orphans the first batch.
 4. `mb document create --file ... --json` (or `mb document update` if
-   revising one already created this session).
+   revising one already created this session — see the re-fetch-first
+   gotcha above).
 5. Verify with `mb document get <id> --full --json` — confirm the headings,
    embedded cards, and smart link landed as intended.
 6. Report the Document's id/name back to the user alongside the dashboard
@@ -375,6 +452,18 @@ per `references/project-improvements.md`'s 2026-09-15 entry) — a cheap
 re-read here catches a missed write before the session ends, when it's still
 fixable in the same turn instead of lost.
 
+Same check, same reason, for reusable constructions: list every card built
+this session whose underlying join/ranking/summarize logic was genuinely
+reusable beyond that one chart (per `prompts/chart-generation.md` step 8),
+and re-read `references/canonical-patterns.md` to confirm each one actually
+got a subsection — this has also already failed silently once (account
+89060's card 76245, explicitly logged as "promoted to a Model since it
+backs 2 charts," never got a canonical-patterns.md entry, per
+`references/project-improvements.md`'s 2026-09-24 entry). If a qualifying
+card's construction wasn't recorded yet, write it now, grounded in the
+card's real `dataset_query` (`mb card get --full`) — never from the card's
+name or your own memory of building it.
+
 ## Logging
 
 Log per CLAUDE.md "History log" — include `collection_mode` (`"data_team_wip"`
@@ -387,6 +476,10 @@ takes it:
 - One `dashboard_created` entry per brand-new dashboard assembled (including
   its companion documentation Document's id/name, if the user asked for
   one), or one `dashboard_updated` entry per existing dashboard added to.
+- For a documentation-only request (see "Add the documentation Document"
+  above): one standalone `documentation_created` entry instead — there's no
+  `dashboard_created`/`dashboard_updated` entry in this pass to fold it
+  into.
 - If drill-downs were built ("Add drill-downs" above): one `chart_created`
   entry per new drill-down/detail card, plus one `dashboard_updated` entry
   for the `click_behavior` wiring itself (even when the dashboard was

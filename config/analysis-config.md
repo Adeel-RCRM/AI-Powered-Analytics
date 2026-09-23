@@ -77,9 +77,22 @@ Metabase's own automatic assignment.
 
 ## Data labels (CLAUDE.md "Data labels")
 
-- Bar / stacked bar / line / area / row / combo / funnel → `"graph.show_values": true`.
-- Pie → `"pie.percent_visibility": "inside"` or `"both"` (not `"off"`).
+Label density follows chart density — see CLAUDE.md "Data labels" and
+`references/visual-design-standards.md`'s "Data labels & legends" for the
+full rule.
+
+- Low-cardinality (funnel, a small-category bar/stacked bar/row, a pie
+  within its cap) → show every value: `"graph.show_values": true` with
+  Metabase's "All values" mode, or `"pie.percent_visibility": "inside"` or
+  `"both"` (not `"off"`) for pie.
+- High-cardinality continuous trend (line / area with many x-axis points) →
+  Metabase's "Some values" legibility mode, not "All" — lean on the legend
+  and Metabase's native hover tooltip for the rest.
+- Combo → label only the story series (e.g. an overlaid "Total" line) via
+  the per-series value toggle, not every series.
 - Scatter → point-level labels aren't standard for a scatter's density; a
   clear axis/legend is sufficient — don't force `graph.show_values` here.
 - Table / pivot table / scalar / smartscalar / progress (KPI) → no setting
-  needed; every value is already directly visible.
+  needed; every value is already directly visible. A smartscalar/trend KPI
+  still needs its comparison-direction setting checked — see CLAUDE.md "KPI
+  trend color direction".

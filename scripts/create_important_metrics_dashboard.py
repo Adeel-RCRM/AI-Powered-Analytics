@@ -47,6 +47,17 @@ guidance. Its account-suffixed table name is a literal substring in the SQL
 text and is substituted per-account (see native_table_refs handling in
 build_card_query) in addition to the usual field-id remapping.
 
+Every pie's slices, and every multi-series bar/line/row/area card's series,
+get an explicit color from references/visual-design-standards.md's fixed
+8-hue categorical palette (see apply_series_colors) - assigned by running
+that card's own already-validated query live and coloring its real,
+distinct category values in a stable alphabetical order, never by rank.
+Single-series cards already carry their color in the template itself (a
+metric-name-keyed series_settings entry) and are left alone. A genuinely
+ordinal breakout still gets nominal coloring here rather than the
+standard's ordinal ramp, since that needs a per-account confirmed order
+this fully automated flow never asks for.
+
 Every qualifying dashcard also gets a click_behavior drill-down (see CLAUDE.md
 "Drill-downs" and prompts/drilldowns.md), built from
 important_metrics_dashboard_template.json's own "drilldown_entities"/
@@ -392,6 +403,129 @@ def validate_and_create_card(profile, name, display, query, visualization_settin
     return result["id"], None
 
 
+# references/visual-design-standards.md "Categorical color" - fixed order, never cycled.
+CATEGORICAL_PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
+# Above this many distinct breakout values, a field isn't well-formed
+# categorical data (e.g. a free-text "city" column) - don't pick an
+# arbitrary top 8 out of it at all. See assign_categorical_colors.
+CATEGORICAL_COLOR_CARDINALITY_CAP = 100
+
+
+def rank_values_by_metric(rows, dim_idx, metric_idx):
+    """Sum each breakout value's real metric total across every row it
+    appears in (a pie has one row per value; a 2-dimension cartesian series
+    can repeat across x-axis buckets) - this is what decides which values
+    are prominent enough on the actual rendered chart to be worth an
+    explicit color, not the values' names."""
+    totals = {}
+    for row in rows:
+        if not row or dim_idx >= len(row):
+            continue
+        value = row[dim_idx]
+        if value is None:
+            continue
+        metric = row[metric_idx] if metric_idx is not None and metric_idx < len(row) else None
+        totals[value] = totals.get(value, 0) + (metric if isinstance(metric, (int, float)) else 0)
+    return totals
+
+
+def assign_categorical_colors(value_totals):
+    """Pick the fixed 8-hue categorical palette for the values that actually
+    dominate the chart (by real summed metric total, ties broken
+    alphabetically for a deterministic result on reruns) - magnitude only
+    decides WHICH values earn an explicit color, never the color's own
+    intensity (see references/visual-design-standards.md's 'Never
+    color-rank a nominal category': that rule bans a magnitude-driven
+    lightness ramp on a nominal field; each chosen value still gets one
+    flat palette hue, same as any other categorical slot). The 9th value
+    and beyond are left uncolored (Metabase's own default) rather than
+    cycling the palette or inventing a slot the standard doesn't define -
+    Metabase's own pie.slice_threshold/legend already recede a long tail
+    visually, so this is consistent with, not a workaround for, that.
+    Above CATEGORICAL_COLOR_CARDINALITY_CAP distinct values, this isn't
+    coloring a bounded set of categories at all (a free-text field with
+    thousands of dirty values, e.g. an unstructured "city" column - the
+    exact shape "Candidate Distribution By City" hits on account 662) - see
+    references/visual-design-standards.md's pie/all-pairs caps and CLAUDE.md's
+    "Data quality gate" - so nothing gets colored, not even a top-8 guess,
+    rather than implying those 8 particular values were deliberately chosen
+    as meaningful."""
+    if len(value_totals) > CATEGORICAL_COLOR_CARDINALITY_CAP:
+        return {}
+    ranked = sorted(value_totals.items(), key=lambda kv: (-kv[1], str(kv[0])))
+    return {str(v): CATEGORICAL_PALETTE[i] for i, (v, _) in enumerate(ranked) if i < len(CATEGORICAL_PALETTE)}
+
+
+def apply_series_colors(profile, card, query, visualization_settings):
+    """Color a pie's slices, or a multi-series bar/line/row/area chart's
+    series, using this account's real category values - run live via the
+    card's own already-validated query, never guessed or hardcoded (a
+    template can't know an account's actual City/Work-Experience/Gender
+    values in advance - and one of these, "Exp Group", is a computed
+    expression breakout with no raw field to look values up against, so this
+    runs the query itself rather than a field-level distinct-values lookup).
+    See references/visual-design-standards.md's 'Categorical color'. This
+    treats every breakout value as nominal (assign_categorical_colors' flat,
+    never value-ranked slots); a genuinely ordinal dimension (where order
+    carries meaning) would need this account's confirmed order instead
+    (CLAUDE.md's hiring-stage-order rule, never queried/invented) - out of
+    reach for this fully automated, no-per-account-questions flow. A card
+    that already carries its own explicit color (pie.colors/pie.rows, or
+    series_settings) is left completely alone - e.g. "Candidate Distribution
+    By Work Experience" already ships a hand-built pie.rows ordinal ramp for
+    its genuinely ordered Exp Group buckets, which must never be overwritten
+    or duplicated by this nominal-only logic. Single-series cards (one
+    dimension, one-or-more named metrics) already carry their color directly
+    in the template via a metric-name-keyed series_settings entry and are
+    left untouched too (skipped by the len(dims) != 2 check)."""
+    display = card["display"]
+    if display == "pie":
+        if "pie.colors" in visualization_settings or "pie.rows" in visualization_settings:
+            return visualization_settings
+        result = mb_body(profile, "query", "--max-bytes", "0", body=query)
+        cols = [c["name"] for c in result.get("data", {}).get("cols", [])]
+        rows = result.get("data", {}).get("rows", [])
+        if len(cols) < 2:
+            return visualization_settings
+        dim_col = visualization_settings.get("pie.dimension") or cols[0]
+        if isinstance(dim_col, list):  # concentric rings - color only the innermost
+            dim_col = dim_col[0]
+        metric_col = visualization_settings.get("pie.metric") or cols[-1]
+        if dim_col not in cols or metric_col not in cols:
+            return visualization_settings
+        totals = rank_values_by_metric(rows, cols.index(dim_col), cols.index(metric_col))
+        colors = assign_categorical_colors(totals)
+        if not colors:
+            return visualization_settings
+        visualization_settings = copy.deepcopy(visualization_settings)
+        visualization_settings["pie.colors"] = colors
+        return visualization_settings
+
+    if display in ("bar", "line", "area", "row"):
+        dims = visualization_settings.get("graph.dimensions") or []
+        if len(dims) != 2 or "series_settings" in visualization_settings:
+            return visualization_settings
+        series_col = dims[1]
+        result = mb_body(profile, "query", "--max-bytes", "0", body=query)
+        cols = [c["name"] for c in result.get("data", {}).get("cols", [])]
+        rows = result.get("data", {}).get("rows", [])
+        if series_col not in cols:
+            return visualization_settings
+        metrics = visualization_settings.get("graph.metrics") or []
+        metric_col = metrics[0] if metrics else cols[-1]
+        if metric_col not in cols:
+            return visualization_settings
+        totals = rank_values_by_metric(rows, cols.index(series_col), cols.index(metric_col))
+        colors = assign_categorical_colors(totals)
+        if not colors:
+            return visualization_settings
+        visualization_settings = copy.deepcopy(visualization_settings)
+        visualization_settings["series_settings"] = {v: {"color": hexcode} for v, hexcode in colors.items()}
+        return visualization_settings
+
+    return visualization_settings
+
+
 def build_parameter_mapping(card, resolved):
     pm = card["param_mapping"]
     if pm["kind"] == "template_tag":
@@ -681,11 +815,12 @@ def main():
             print(f"  SKIP  {card['name']}: failed dry-run validation")
             continue
 
+        viz = apply_series_colors(profile, card, query, card["visualization_settings"])
         body = {
             "name": card["name"],
             "display": card["display"],
             "dataset_query": query,
-            "visualization_settings": card["visualization_settings"],
+            "visualization_settings": viz,
             "collection_id": cards_collection_id,
         }
         result = mb_body(profile, "card", "create", body=body)

@@ -365,13 +365,26 @@ shouldn't wait that long.
 
 Early in any session, after configuration is verified (CLAUDE.md Step 0),
 scan `logs/performance-tracking.jsonl` for `requirement_pending` entries
-with no `requirement_confirmed` entry sharing their `tracking_id`. If any
-exist, tell the user plainly which account(s) and how many are waiting
-(e.g. "Account 92840 has 4 unconfirmed performance-tracking entries from
-2026-09-15 — want to confirm them now, or later?") and proceed based on
-their answer. This is the actual fix for a session ending before
-confirmation happens — don't rely on the user remembering to bring it up
-unprompted.
+with no `requirement_confirmed` entry sharing their `tracking_id` —
+**first excluding any `tracking_id` that appears in another entry's
+`supersedes` array** (per "Superseding an older entry" below), regardless
+of whether that later entry is itself still `pending` or already
+`confirmed`. A same-session correction can chain through several
+`requirement_pending` entries before the work is ever confirmed (each one
+superseding the last, e.g. account 89060's 2026-09-18 drill-down batch:
+three corrected `requirement_pending` entries in a row before the final one
+was confirmed) — only the final, un-superseded `tracking_id` in that chain
+is the one to check for a matching `requirement_confirmed` entry. The
+superseded entries along the way were never meant to get their own
+confirmation and must never be reported as still awaiting one — a naive
+scan that skips this exclusion will flag them forever, every session, even
+after the work they represent was confirmed under a different tracking_id.
+If any genuinely unconfirmed entries exist after that exclusion, tell the
+user plainly which account(s) and how many are waiting (e.g. "Account 92840
+has 4 unconfirmed performance-tracking entries from 2026-09-15 — want to
+confirm them now, or later?") and proceed based on their answer. This is
+the actual fix for a session ending before confirmation happens — don't
+rely on the user remembering to bring it up unprompted.
 
 ## Log schema
 

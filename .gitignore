@@ -11,6 +11,10 @@
 .DS_Store
 *.log
 
+# Python bytecode cache (scripts/*.py)
+__pycache__/
+*.py[cod]
+
 # Local Claude Code settings
 .claude/settings.local.json
 .claude/settings.json

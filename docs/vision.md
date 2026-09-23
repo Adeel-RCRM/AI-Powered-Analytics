@@ -34,11 +34,15 @@ actually implemented:
 - **Creative** — actively drawing on Metabase's full display catalog (not
   defaulting to bar/line/table out of habit — see `prompts/chart-generation.md`)
   and the accumulated shapes in `references/canonical-patterns.md`.
-- **Visually aesthetic & minimal** — a deliberate house visual style
-  (`references/visual-design-standards.md`): a validated, accessible color
-  system applied consistently instead of Metabase's own automatic
-  assignment, plus consistency conventions (title casing, number precision,
-  chart-form choice) so a client's dashboards read as one designed system.
+- **Visually aesthetic & minimal** — a deliberate house design system
+  (`references/visual-design-standards.md`), the same for every account: a
+  validated, accessible color system (categorical, ordinal, sequential,
+  diverging, status) applied instead of Metabase's own automatic
+  assignment; a dashboard information hierarchy grounded in Stephen Few's
+  inverted pyramid and the "5-second rule"; form-selection guardrails
+  (never a dual-axis chart, series-count/pie/donut caps); and consistency
+  conventions (title casing, number precision, chart-form choice) so every
+  client's dashboards read as one designed system.
 - **Highly functional & optimized** — drill-downs on every chart where a
   sensible target exists (`prompts/drilldowns.md`), cross-filtering over
   duplicated content, and genuinely reaching for Metabase's own native

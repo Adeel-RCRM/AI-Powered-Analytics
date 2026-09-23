@@ -39,4 +39,54 @@ overwriting it.
 
 ---
 
-_(no patterns recorded yet)_
+## Outreach/engagement activity classification via UNION across heterogeneous log tables
+
+- **Applies to** — an account where "outreach activity" or "engagement
+  activity" spans more than one physically distinct log table (e.g. calls
+  in a call-log table, texts in a messaging table, emails/other channels
+  logged as notes with a label field) and needs a single unified
+  id/owner/timestamp/category feed — for a breakdown table, a pie by
+  activity type, or any chart that needs to treat these as one metric
+  family. Requires native SQL (a `UNION ALL` across heterogeneous sources
+  isn't expressible in MBQL) — build as a **Model**, never a one-off native
+  SQL question, since this shape is inherently meant to back more than one
+  chart.
+- **Construction** — one `SELECT ... UNION ALL ...` per outreach category,
+  each branch projecting the same four columns in the same order
+  (`id`, an owner/rep name — joined from a teams/users table where the
+  source table only carries a raw `created_by`/FK id, not a name — a
+  timestamp column, and a literal string naming that branch's
+  `outreach_type`), filtered to the specific value(s) that define that
+  category on its source table (e.g. `call_type_label = 'Cold Call'` on a
+  call-log table, `note_label = 'Email Sent'` on a notes table). The
+  resulting Model's own single column set (`id`, `owner_name`,
+  `created_on`, `outreach_type`) is what every chart built on it then
+  breaks out/aggregates by — no further per-branch logic needed downstream.
+- **Confirmed on** — account 89060 (Cleveland Clinic). Two verified
+  instances share this exact shape but intentionally diverge on which
+  literal filter values define each branch:
+  - Model #52671 ("Outreach Activity") — the account's general-purpose
+    version: `Calls made` (`call_type = 'Outgoing call'`), `Texts sent`,
+    `Emails Sent`, plus several further notes-based categories
+    (`LinkedIn Messages Sent`, `Indeed Messages Sent`, connect-type
+    variants, etc.).
+  - Model #76245 ("Outreach Activity - Cold Calls Variant") — built for
+    a different chart's specific need (Weekly Outreach, Outreach Activity
+    pie): reuses #52671's `Texts sent`/`Emails Sent` branches verbatim, but
+    swaps the Calls branch for `Cold Calls` (`call_type_label = 'Cold
+    Call'`), a value #52671's own `Calls made` branch couldn't produce by
+    filtering its output — that definition is baked into #52671's own
+    native SQL, and #52671 is pre-existing content this project doesn't
+    modify. Built as a new Model rather than editing #52671, per hard
+    constraint 7.
+- **When NOT to reuse it** — the *construction* (UNION shape, four-column
+  branch contract, Model-not-one-off) generalizes; the **specific literal
+  filter value(s) per branch do not** — confirm what actually defines each
+  outreach category on this account's own data (via the user, not by
+  querying live values) before reusing this shape, even for a second chart
+  on the *same* account, exactly as #76245 needed a different Calls
+  definition than #52671 despite both being "outreach activity" on the same
+  account. Never assume another account's table/column names, label values,
+  or even which categories exist — confirm structure via `mb table fields`
+  and category values via the user/`references/metric-glossary.md` per the
+  usual discovery rules before applying this shape elsewhere.

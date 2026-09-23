@@ -50,8 +50,8 @@ their own.
 Never invent a suggestion from first principles without having actually
 looked at the current contents of the file(s) it's about.
 
-**Two checks run every time this review happens, not just when they happen
-to turn something up:**
+**Three checks run every time this review happens, not just when they
+happen to turn something up:**
 
 - **Metabase currency.** Diff `mb --help --json` and `mb skills list --json`
   against what CLAUDE.md's "Before every session" paragraph documents —
@@ -64,6 +64,26 @@ to turn something up:**
   one have a corresponding `## Account <n>` section? This is the exact check
   that caught the 2026-09-15 gap (real chart work across ~10 accounts, zero
   populated glossary sections) — run it every time, not just once.
+- **Living design/knowledge files vs. what actually implements them.**
+  `references/visual-design-standards.md`, `references/canonical-patterns.md`,
+  `prompts/performance-tracking.md` (and the `references/effort-estimation-rubric.md`
+  it scores against) are this project's fastest-drifting files — each one
+  makes claims about what CLAUDE.md's flows and `scripts/create_default_dashboard.py`
+  / `scripts/create_important_metrics_dashboard.py` actually do, and those
+  claims silently go stale the moment the underlying code changes without a
+  matching edit here. Concretely check: does CLAUDE.md's own description of
+  what a script does (or doesn't) do still match the script's real, current
+  behavior? Does a `references/canonical-patterns.md` entry still match how
+  a chart is actually built today? Is `effort-estimation-rubric.md`'s last
+  calibration date still reasonably fresh against real performance-tracking
+  entries logged since? This is the exact class of gap that caught CLAUDE.md's
+  "Color" section asserting neither dashboard script sets any
+  `series_settings` color (2026-09-24) — checked directly, one of the two
+  scripts already had it and the note was simply never updated once the
+  color-assignment work landed. `references/metric-glossary.md`'s own
+  per-account content is covered by the memory-layer check above; this
+  check is about the file's own stated rules/conventions, not its account
+  sections.
 
 Once grounded, draw from whichever of these genuinely applies:
 

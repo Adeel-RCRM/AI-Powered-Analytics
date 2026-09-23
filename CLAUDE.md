@@ -82,9 +82,13 @@ Beyond the three already used everywhere in this file (`mbql`, `dashboard`,
 `visualization`), this project's own work also touches: `document` (Metabase's
 native Documents — rich text + embedded charts + comments), `metadata`
 (field/table semantic-type work, e.g. marking a foreign key so joins/linked
-filters work), and `native-sql` (parameterized SQL questions — the fallback
-path "Chart creation" below describes). Load whichever one a task touches; do
-not guess `mb` flag syntax — check `mb <command> --help` first.
+filters work), `native-sql` (parameterized SQL questions — the fallback
+path "Chart creation" below describes), and `notification` (dashboard
+subscriptions and question alerts — `mb subscription`/`mb alert` — for a
+requirement that's a delivery schedule rather than a chart, per
+`prompts/requirements-intake.md`'s "Some requests aren't a chart at all").
+Load whichever one a task touches; do not guess `mb` flag syntax — check
+`mb <command> --help` first.
 
 `git-sync` is also bundled (round-trips Metabase content — cards, dashboards,
 collections — with a git remote) and this instance has the underlying
@@ -92,6 +96,26 @@ collections — with a git remote) and this instance has the underlying
 but this project doesn't use it yet — this Metabase instance isn't connected
 to a git remote for it. Worth evaluating deliberately as its own decision
 before this project relies on it for anything.
+
+`mb skills list` also bundles a `data-workflow` skill — a generic, guided
+"raw data → clean tables → metrics → answers → dashboards" loop for when a
+user states a goal rather than a single verb. This project deliberately
+does not load or route through it: `prompts/discovery.md`,
+`prompts/requirements-intake.md`, and `prompts/chart-generation.md` already
+encode that same end-to-end loop, specialized for Recruit CRM/Metabase (the
+account-scoped collection conventions below, hard constraint 7, the
+ask-once-per-account business-term rules, the duplicate-id/stage-ordinal
+data-model knowledge) — `data-workflow` knows none of that. Keep following
+this project's own flow rather than invoking `data-workflow`.
+
+`mb skills list` also bundles a `transform` skill (authoring/running Metabase
+transforms — native SQL or structured MBQL, run-with-wait, dependencies).
+This instance's `tokenFeatures` (see "Configuration verification" below) has
+`transforms-basic`/`transforms-python` both `false` — the plan doesn't
+support Transforms at all right now, so this skill is currently unusable
+here regardless of task. Don't reach for it; re-check `tokenFeatures` before
+assuming that's still true, since a plan can change independently of the
+server version.
 
 ## Starting the workflow
 
@@ -468,6 +492,36 @@ underlying logic is genuinely reusable across more than one likely question
 (e.g. the stage-ordinal current-stage calculation) — for a true one-off, a
 native SQL question on its own is fine, just say why it isn't a Model.
 
+**A reusable filter or aggregation that's expressible in plain MBQL on a
+single table has its own native object — prefer it over re-deriving the
+same condition inside every card's own Filter/Summarize step.** Before
+creating one, check for an existing Segment/Measure on the same table that
+already encodes this filter/aggregation — `mb search <term> --models
+segment,measure --limit 20 --json`, the same dedup principle as "Avoiding
+duplicate charts" above — and reuse it instead of creating a near-duplicate
+under a different name. A business-term filter confirmed once per account
+that more than one card will need again (e.g. "active client" = status in
+Active/Renewing) belongs in a **Segment** (`mb segment create` — `name`,
+`table_id`, a `definition` holding the filter clause); a reusable named
+aggregation on one table used by more than one card (e.g. a specific
+stage-count feeding more than one ratio card) belongs in a **Measure**
+(`mb measure create` — same shape, `definition` holds exactly one
+aggregation). Both are narrower than a
+Model, not a replacement for it: they're MBQL-only (no native SQL) and
+scoped to a single table with no joins, so reach for a Model instead when
+the reusable logic needs native SQL, a join, or more than one aggregation
+step. `mb card create`'s `type` field also accepts `metric` (alongside
+`question`/`model`) for a saved, reusable aggregation question in its own
+right — its specific advantage (surfacing as a starting point in
+Metabase's own data picker/search, per the `library` skill) matters most
+once reuse across more than one dashboard is the actual goal, so weigh it
+against a plain Model-backed chart case by case rather than defaulting to
+it. Updating or archiving a Segment/Measure needs a non-blank
+`revision_message` (the CLI does not synthesize one). Record a new
+Segment's or Measure's confirmed business-term mapping in
+`references/metric-glossary.md` immediately, same as any other confirmed
+per-account definition.
+
 Only after recommendations are presented and explained:
 
 1. Ask the user to confirm which recommendation(s) to actually create in
@@ -515,29 +569,110 @@ doesn't need to be asked about — apply it directly.
 This applies to every flow that creates cards. `scripts/
 create_default_dashboard.py` has monetary cards (Total Cost of Calls, Deal
 Target Achieved, Total Deal Value per Company, Deal Value Closed Over Time)
-and accepts a `--currency` flag, prompting for it if omitted. `scripts/
+and accepts a `--currency` flag, prompting for it if omitted — and, once the
+dashboard is created, writes the confirmed currency back to
+`references/metric-glossary.md`'s `## Account <n>` section itself
+(`record_currency_in_glossary`), the same ask-once-per-account write-back
+every conversational flow already does, so a later Requirements Intake
+session on the same account doesn't re-ask a currency this script already
+confirmed. `scripts/
 create_important_metrics_dashboard.py`'s current template has no monetary
 cards, so it has no such flag — if a future version of that template adds
-one, apply the same ask-once-per-account convention rather than hardcoding
-a symbol.
+one, apply the same ask-once-per-account convention (asking, and writing the
+answer back to the glossary) rather than hardcoding a symbol.
+
+### Color
+
+Every chart's series/category colors, sequential/diverging range
+formatting, and status colors are assigned explicitly, per the fixed,
+universal palette and rules in `references/visual-design-standards.md` —
+never left to Metabase's own automatic series coloring, and never varied
+per client (the standard is the same for every account). Load that file in
+full before assigning color to any chart — it covers the categorical,
+ordinal (ordered categories like a hiring-pipeline stage), sequential,
+diverging, and status color jobs, plus the anti-patterns to avoid (never a
+dual-axis chart, never recoloring survivors when a filter changes which
+categories appear, never a value-ramp on a nominal category). This applies
+to every flow that creates cards, including
+`scripts/create_default_dashboard.py` and
+`scripts/create_important_metrics_dashboard.py`. Every single-series card in
+both templates already sets its one series to slot 1 explicitly. Every pie's
+slices and every multi-series bar/line/row/area card's series (a card whose
+`graph.dimensions` carries a second, breakout dimension) get colored
+dynamically at creation time (`apply_series_colors` in both scripts) — the
+account's real, distinct category values are pulled live from that card's
+own already-validated query (a template can't know an account's actual Call
+Type/Deal Stage/source/City values in advance) and assigned the fixed
+palette in order of which values actually dominate the chart, never by
+value-ramping their color's intensity. A card that already carries a
+hand-built color (`pie.colors`, `pie.rows`, or `series_settings` already
+present in the template — e.g. the Important Metrics template's own
+ordinal-ramped "Candidate Distribution By Work Experience") is left alone.
+One known, deliberate gap: a genuinely ordinal breakout (an ordered
+pipeline/deal stage) still gets nominal coloring here rather than the
+standard's ordinal ramp, since the ordinal ramp needs this account's
+confirmed stage order and these two flows never ask the user anything.
+**Above 100 distinct breakout values, nothing gets colored at all** — a
+field with that much cardinality (e.g. a free-text `city` column) isn't
+well-formed categorical data, and picking an arbitrary top 8 out of it
+would imply those 8 particular values were deliberately chosen as
+meaningful when they aren't. `scripts/important_metrics_dashboard_template.json`'s
+"Candidate Distribution By City" hit exactly this on account 662 (a `city`
+field with 4,177 distinct values) and was redesigned rather than just left
+uncolored — it's now a `row` chart of the top 10 cities by candidate count
+with blank/null values filtered out (see
+`references/project-improvements.md`'s Resolved entry for the full
+reasoning); this is the pattern to reach for if another high-cardinality
+free-text breakout turns up elsewhere, rather than reintroducing a pie/bar
+against a field that was never a bounded set of categories.
 
 ### Data labels
 
-Every chart that plots discrete points, bars, or segments (bar, stacked bar,
-line, area, row, combo, funnel) must show its actual value on each
-point/bar by default — a shape with no number next to it isn't sufficient.
-Set `visualization_settings["graph.show_values"] = true` when building the
-chart. For pie charts, the equivalent is `pie.percent_visibility` set to
-`"inside"` or `"both"` (labels on or next to each slice), not `"off"`.
+**Label density follows chart density, not a blanket "always on."** A
+shape with no value readable at a glance isn't acceptable, but neither is a
+value crammed onto every point of a dense trend line — see
+`references/visual-design-standards.md`'s "Data labels & legends" for the
+full reasoning and the low-cardinality-vs-high-cardinality breakdown. In
+summary:
+
+- **Low-cardinality discrete comparisons** (funnel, a bar/row chart with a
+  small number of categories, a pie/donut within its cap) — show every
+  value: `visualization_settings["graph.show_values"] = true` with
+  Metabase's "All values" mode, or `pie.percent_visibility` set to
+  `"inside"` or `"both"` (never `"off"`) for a pie.
+- **High-cardinality continuous trends** (a line/area chart with many
+  x-axis points) — use Metabase's "Some values" legibility mode instead of
+  forcing every point, and rely on the legend plus Metabase's native hover
+  tooltip for the rest.
+- **Combo charts** — label only the series that's the actual story (e.g. an
+  overlaid "Total" line), via the per-series value toggle, not every bar in
+  a busy combo.
+
+Load the `visualization` skill to confirm the exact key/value pair Metabase
+currently uses for the all/some/none choice and the per-series override.
 
 Tables, pivot tables, and single-value displays (scalar, smartscalar,
 progress/KPI) already show every value directly in the cell/number itself —
 there's no separate point/bar to label, so no extra setting applies there.
 This applies to every flow that creates cards, including
 `scripts/create_default_dashboard.py` and
-`scripts/create_important_metrics_dashboard.py`, whose templates already
-follow this convention on every graph-type card except one bar chart that
-was missing it (fixed).
+`scripts/create_important_metrics_dashboard.py` — both currently set
+blanket `graph.show_values` with no density distinction, so check their
+graph-type cards against this the next time either script is touched.
+
+### KPI trend color direction
+
+Metabase's `smartscalar` display auto-colors a period-over-period
+comparison on the assumption that an increase is good — that assumption is
+wrong for plenty of this project's own metrics (cost, time-to-fill,
+drop-off/decline rates). Before shipping a smartscalar/trend KPI card,
+check whether a rise in that specific metric is actually the good outcome
+and correct Metabase's comparison/direction setting when it isn't — never
+leave Metabase's raw increase-is-green default unexamined. See
+`references/visual-design-standards.md`'s "KPI / trend-indicator direction
+semantics" for the full rule, including when to add a goal line. Applies to
+every flow that creates a smartscalar/trend card, including both automated
+dashboard scripts.
 
 ### Table formatting
 
@@ -590,6 +725,16 @@ on the chart**, not just the one(s) that need to differ from the default —
 e.g. every region series gets `{"display": "bar"}` and the total series
 gets `{"display": "line"}`. Never rely on "the other series will just
 inherit bar" — they don't, unless told to.
+
+**Never assign a series to a second y-axis** (Metabase's own "split y-axis
+when necessary" behavior, or an explicit per-series right-axis pin) — a
+dual-axis chart invents a correlation that isn't in the data, since the
+alignment between two independent scales is arbitrary. When two measures on
+one combo chart genuinely have different scales, use two separate cards,
+small multiples, or index both to a common base (both = 100 at the first
+period) on the one shared axis instead. See
+`references/visual-design-standards.md`'s "Choosing the form" for the full
+rule.
 
 ### Dashboard destination
 
@@ -846,12 +991,36 @@ entity with live embedded charts (load the `document` skill for the exact
 TipTap/ProseMirror body shape) — a **separate Metabase object that sits
 alongside the dashboard, never a tab added to the dashboard itself.** Written
 for the people who'll actually use the dashboard day-to-day, not for a
-teammate reading the query:
+teammate reading the query — but written for grounded correctness, not
+polish alone. Full method, and known Metabase gotchas (including a
+card-cloning behavior every session hits on the first `document create`),
+are in `prompts/documentation.md` — read it in full before building any
+Document; the rules below are the summary, not the whole of it:
+
+**A request can be documentation-only** — the user names an existing
+dashboard (this project's own prior output, or any dashboard they point to
+directly) and asks only for a companion Document, with no new chart/card
+work at all. This still enters through Requirements Intake (Step 0.5), but
+skips straight past that flow's chart-resolution steps (there's nothing to
+resolve): confirm the account (flow step 1) if it isn't already
+established, confirm the named dashboard actually exists and note its id
+(`mb dashboard get <id>`), then come straight to this section. **Skip
+Requirements Intake step 2's Data Team WIP-vs-account-collection question
+entirely in this case** — it governs where *new* cards/dashboards land,
+and a documentation-only pass creates none; the Document's own collection
+is already decided below ("wherever the dashboard already lives"), never
+by asking again. Log it as its own `documentation_created` history entry
+(see "History log" below) rather than folding it into a
+`dashboard_created`/`dashboard_updated` entry — there isn't one in this
+pass to fold it into, since no dashboard content was touched.
 
 - **Purpose** — a heading + paragraph explaining, in plain business
   language, why this dashboard exists, tied back to the requirement(s) that
-  drove it. Include a `smartLink` (`model: "dashboard"`) near the top
-  pointing at the live dashboard so a reader can jump straight to it.
+  drove it — grounded in an actual recorded requirement
+  (`logs/history.jsonl`, or a stated ask in the conversation), never an
+  assumed audience/motivation the chart selection alone doesn't support.
+  Include a `smartLink` (`model: "dashboard"`) near the top pointing at the
+  live dashboard so a reader can jump straight to it.
 - **What each chart means** — one section per chart (or per closely related
   group): a heading naming it, a plain-language paragraph explaining what it
   shows and why it matters (no jargon, no field names, no SQL), with the
@@ -859,15 +1028,49 @@ teammate reading the query:
   (`cardEmbed`, wrapped in a `resizeNode` at a modest fixed height —
   300-400px is usually enough — referencing the same card id already
   created for the dashboard; see the `document` skill's "Embedding an
-  existing card"). This is the actual point of a Document over the old
-  text-only tab: the reader sees the explanation and the live chart
-  together, not a description of a chart they have to go find on another
-  tab.
+  existing card"). **Every claim in that paragraph must be grounded in the
+  card's actual `dataset_query`** (pull it with `mb card get --full`,
+  walking into any `source-card` it's built on) — never inferred from the
+  chart's name or display type alone, and never causal/comparative
+  narrative between charts ("this feeds into that a few weeks later")
+  unless the user or source material stated it directly. See
+  `prompts/documentation.md`'s "Ground every chart explanation in its real
+  query" for the full method. This is the actual point of a Document over
+  the old text-only tab: the reader sees a verifiable explanation and the
+  live chart together, not a description of a chart they have to go find
+  on another tab.
 - **How to use it** — a section covering the dashboard's filters and any
   drill-downs (see "Drill-downs" above) in plain terms: what a filter does,
-  what happens when you click into a bar/segment/KPI. A static document
-  can't demonstrate a click, so point back to the live dashboard via the
-  same `smartLink` for "try it yourself."
+  what happens when you click into a bar/segment/KPI. **Pull the
+  dashboard's actual `parameters` list and each dashcard's real
+  `parameter_mappings` — don't describe a generic/assumed filter set, and
+  don't imply every filter reaches every chart when it doesn't** (a filter
+  can be unmapped on a given card, or a trend chart's date breakout can be
+  hardcoded with no `temporal-unit` parameter mapped at all). State which
+  filters actually apply per chart section above, and note the exceptions
+  here — see `prompts/documentation.md`'s "Determine per-chart filter
+  applicability" for the full method. **If the dashboard has drill-downs
+  wired, don't just assert "every chart is clickable" — pull each
+  dashcard's real `click_behavior`, resolve its actual target (a specific
+  detail question or dashboard, by its real name, not "a detail view"),
+  and state what carries through as a pre-set filter there.** This is not
+  uniform even within one group of similar charts — a trend chart's
+  drill-down commonly forwards fewer filters than its scalar/breakdown
+  siblings, the same kind of per-chart gap as the filters above. **Then
+  open the destination itself and check whether it has a further layer
+  before calling the description done** — a detail table's own columns
+  routinely carry a second click (a "Profile" column whose value is a live
+  external URL into Recruit CRM, not another Metabase view; a
+  drill-down-to-a-dashboard case adds its own filter panel as a distinct
+  step before that). State the actual number of steps to reach an
+  individual record — one dashboard's sections can genuinely differ, two
+  steps for most charts and three for others — rather than one blanket
+  "click for detail" sentence that reads the same regardless of depth.
+  Full method: `prompts/documentation.md`'s "Describe each chart's
+  drill-down from its real `click_behavior`," including its "Don't stop at
+  the first hop" subsection. A static document can't demonstrate a click,
+  so point back to the live dashboard via the same `smartLink` for "try it
+  yourself."
 
 Name the Document **"<Dashboard Name> Guide"** so it's unambiguous alongside
 other content in the same collection. It lives in the same collection as the
@@ -880,7 +1083,14 @@ same way the dashboard does, so it surfaces near it.
 `cardEmbed`) — don't use the `document` skill's inline
 "create-brand-new-cards-atomically-with-the-document" path here, since every
 chart card must already exist, be verified, and be logged per
-`prompts/chart-generation.md` before it's referenced anywhere.
+`prompts/chart-generation.md` before it's referenced anywhere. **Expect
+Metabase itself to clone every embedded card into a new document-owned
+copy anyway** — this happens even when `cardEmbed` references an existing
+card's plain positive id; it's intended Metabase behavior, not a mistake in
+the request. See `prompts/documentation.md`'s gotchas log before doing any
+**second** `mb document update` on the same document — re-fetch the live
+body first and reuse its real clone-card ids, or the update mints a fresh
+set of clones and orphans the first batch.
 
 Because a Document is a wholly separate entity, creating one for an
 **existing** dashboard never touches that dashboard's own `tabs`/`dashcards`
@@ -889,15 +1099,21 @@ at all — it sidesteps the entire class of "whole-array-replace" risk
 tab silently dropped by an update that didn't carry it forward).
 
 Verify with `mb document get <id> --full --json` after creating it — confirm
-the headings, embedded cards, and smart link landed as intended — and fold
-that confirmation into the same `dashboard_created`/`dashboard_updated`
-history-log entry (see "History log" below) as `documentation_doc_id` /
-`documentation_doc_name`; it isn't logged as its own separate entry type.
-This is opt-in across every flow that can produce one — Requirements Intake
-included: create a documentation Document only when the user actually asks
-for one, never by default. The Default Dashboard and Important Metrics
-Dashboard flows are fixed, already-understood templates and follow the same
-rule.
+the headings, embedded cards, and smart link landed as intended. When the
+Document is created in the same pass as the dashboard it documents (the
+normal Requirements Intake case — cards built, dashboard assembled, then
+the Document), fold that confirmation into the same
+`dashboard_created`/`dashboard_updated` history-log entry (see "History log"
+below) as `documentation_doc_id` / `documentation_doc_name` rather than
+logging it separately. When it's a documentation-only pass for an
+already-existing dashboard (see above), there is no `dashboard_created`/
+`dashboard_updated` entry in this pass to fold it into — log a standalone
+`documentation_created` entry instead (see "History log" below for its
+shape). This is opt-in across every flow that can produce one — Requirements
+Intake included: create a documentation Document only when the user
+actually asks for one, never by default. The Default Dashboard and
+Important Metrics Dashboard flows are fixed, already-understood templates
+and follow the same rule.
 
 Keep each `resizeNode` height modest and each explanatory paragraph short —
 a Document scrolls, so there's no fixed-grid whitespace problem the way an
@@ -958,6 +1174,15 @@ Append an entry at these points:
   ```
   ```json
   {"timestamp": "2026-08-19T05:19:00+05:30", "type": "dashboard_updated", "account": "662", "collection_mode": "data_team_wip", "dashboard_id": 4501, "cards_added": [70810, 70811], "documentation_doc_id": 267, "documentation_doc_name": "Owner Activity Guide"}
+  ```
+- **After a documentation-only Document is created for an already-existing
+  dashboard** (per "Dashboard documentation" above's "A request can be
+  documentation-only" case — no cards built, no dashboard tabs/dashcards
+  touched in this pass): one `documentation_created` entry. `dashboard_id`/
+  `collection_id` identify the pre-existing dashboard the Document
+  documents, not anything created in this pass.
+  ```json
+  {"timestamp": "2026-09-23T00:20:44+05:30", "type": "documentation_created", "account": "101731", "collection_mode": "account_collection", "dashboard_id": 18713, "collection_id": 21914, "documentation_doc_id": 298, "documentation_doc_name": "Executive Summary Guide", "cards_embedded": [69012, 68907, 68908]}
   ```
 - **After a Default Dashboard run** (`scripts/create_default_dashboard.py`
   appends this itself — see the script): one `default_dashboard_created` (or

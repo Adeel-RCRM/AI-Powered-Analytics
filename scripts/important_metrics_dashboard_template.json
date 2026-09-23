@@ -527,7 +527,13 @@
         },
         "graph.metrics": [
           "average time spent in this stage"
-        ]
+        ],
+        "series_settings": {
+          "average time spent in this stage": {
+            "color": "#2a78d6"
+          }
+        },
+        "graph.label_value_frequency": "all"
       },
       "param_mapping": {
         "kind": "template_tag",
@@ -1074,7 +1080,12 @@
         "column_settings": {},
         "graph.metrics": [
           "count"
-        ]
+        ],
+        "series_settings": {
+          "count": {
+            "color": "#2a78d6"
+          }
+        }
       },
       "param_mapping": {
         "kind": "field",
@@ -1169,7 +1180,12 @@
         ],
         "graph.metrics": [
           "count"
-        ]
+        ],
+        "series_settings": {
+          "count": {
+            "color": "#2a78d6"
+          }
+        }
       },
       "param_mapping": {
         "kind": "field",
@@ -2169,7 +2185,7 @@
       "source_card_id": 45726,
       "tab": "Diversity",
       "name": "Candidate Distribution By City",
-      "display": "pie",
+      "display": "row",
       "entities": [
         "candidates"
       ],
@@ -2213,12 +2229,62 @@
                 },
                 1870779
               ]
-            ]
+            ],
+            "filters": [
+              [
+                "not-empty",
+                {
+                  "lib/uuid": "ca942c43-3ac3-4c38-a500-09620de5ed1d"
+                },
+                [
+                  "field",
+                  {
+                    "effective-type": "type/Text",
+                    "base-type": "type/Text",
+                    "lib/uuid": "248b3b8f-1c34-4c49-8fb8-9713b00cc59d"
+                  },
+                  1870779
+                ]
+              ]
+            ],
+            "order-by": [
+              [
+                "desc",
+                {
+                  "lib/uuid": "05f3e592-110e-4706-9586-8f70ab71af2b"
+                },
+                [
+                  "aggregation",
+                  {
+                    "lib/uuid": "d729365d-85bb-45d6-9d30-910081176744",
+                    "base-type": "type/Integer",
+                    "effective-type": "type/Integer",
+                    "lib/source-name": "count"
+                  },
+                  "134b4579-b7c5-4f48-ba52-68fbaa8c7326"
+                ]
+              ]
+            ],
+            "limit": 10
           }
         ]
       },
       "visualization_settings": {
-        "pie.percent_visibility": "both"
+        "graph.show_values": true,
+        "graph.show_trendline": false,
+        "graph.label_value_formatting": "auto",
+        "stackable.stack_type": "stacked",
+        "graph.dimensions": [
+          "city"
+        ],
+        "column_settings": {},
+        "graph.metrics": [],
+        "graph.label_value_frequency": "fit",
+        "series_settings": {
+          "count": {
+            "color": "#2a78d6"
+          }
+        }
       },
       "param_mapping": {
         "kind": "field",
@@ -2416,7 +2482,69 @@
         ]
       },
       "visualization_settings": {
-        "pie.percent_visibility": "both"
+        "pie.percent_visibility": "both",
+        "pie.rows": [
+          {
+            "key": "0-2",
+            "name": "0-2",
+            "originalName": "0-2",
+            "color": "#cde2fb",
+            "defaultColor": false,
+            "enabled": true,
+            "hidden": false,
+            "isOther": false
+          },
+          {
+            "key": "3-4",
+            "name": "3-4",
+            "originalName": "3-4",
+            "color": "#9ec5f4",
+            "defaultColor": false,
+            "enabled": true,
+            "hidden": false,
+            "isOther": false
+          },
+          {
+            "key": "5-7",
+            "name": "5-7",
+            "originalName": "5-7",
+            "color": "#5598e7",
+            "defaultColor": false,
+            "enabled": true,
+            "hidden": false,
+            "isOther": false
+          },
+          {
+            "key": "8-10",
+            "name": "8-10",
+            "originalName": "8-10",
+            "color": "#2a78d6",
+            "defaultColor": false,
+            "enabled": true,
+            "hidden": false,
+            "isOther": false
+          },
+          {
+            "key": "11-15",
+            "name": "11-15",
+            "originalName": "11-15",
+            "color": "#184f95",
+            "defaultColor": false,
+            "enabled": true,
+            "hidden": false,
+            "isOther": false
+          },
+          {
+            "key": "15+",
+            "name": "15+",
+            "originalName": "15+",
+            "color": "#0d366b",
+            "defaultColor": false,
+            "enabled": true,
+            "hidden": false,
+            "isOther": false
+          }
+        ]
       },
       "param_mapping": {
         "kind": "field",

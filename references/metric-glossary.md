@@ -158,6 +158,10 @@ in this shape:
 
 **Currency:** not yet confirmed — no monetary field appears on the Cleveland Clinic dashboard.
 
+## Account 662
+
+**Currency:** USD (confirmed via `scripts/create_default_dashboard.py --currency`, 2026-09-24).
+
 ## Unattributed (predates per-account structure — reconfirm before use)
 
 These mappings were recorded before this file separated answers by account.

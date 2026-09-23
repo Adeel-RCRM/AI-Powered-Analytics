@@ -41,7 +41,23 @@ Every monetary card (Total Cost of Calls, Deal Target Achieved, Total Deal
 Value per Company, Deal Value Closed Over Time) is formatted in the currency
 confirmed for this run (see --currency) rather than a hardcoded symbol - a
 client could be billed in USD, EUR, GBP, or anything else, and this is never
-assumed (see CLAUDE.md "Value formatting").
+assumed (see CLAUDE.md "Value formatting"). The confirmed currency is also
+written back to references/metric-glossary.md's own "## Account <n>" section
+(see record_currency_in_glossary) - the same ask-once-per-account write-back
+this project's conversational flows already do - so a later Requirements
+Intake session on the same account doesn't re-ask a currency this script
+already confirmed.
+
+Every pie's slices, and every multi-series bar/line/row/area card's series,
+get an explicit color from references/visual-design-standards.md's fixed
+8-hue categorical palette (see apply_series_colors) - assigned by running
+that card's own already-validated query live and coloring its real,
+distinct category values in a stable alphabetical order, never by rank.
+Single-series cards already carry their color in the template itself (a
+metric-name-keyed series_settings entry) and are left alone. A genuinely
+ordinal breakout (e.g. an ordered pipeline stage) still gets nominal
+coloring here rather than the standard's ordinal ramp, since that needs a
+per-account confirmed stage order this fully automated flow never asks for.
 
 Every qualifying dashcard also gets a click_behavior drill-down (see CLAUDE.md
 "Drill-downs" and prompts/drilldowns.md), built entirely from
@@ -86,6 +102,7 @@ import dashboard_drilldowns
 
 TEMPLATE_PATH = Path(__file__).parent / "default_dashboard_template.json"
 LOG_PATH = Path(__file__).parent.parent / "logs" / "history.jsonl"
+GLOSSARY_PATH = Path(__file__).parent.parent / "references" / "metric-glossary.md"
 LEGACY_PARENT_COLLECTION_ID = 199  # "Data Team WIP" - see CLAUDE.md; only
 # consulted here to check for a pre-existing dashboard from before this flow
 # switched to the account's own collection (see check_legacy_dashboard).
@@ -97,6 +114,12 @@ STRUCTURAL_SUBCOLLECTIONS = ("Cards", "Models", "Drill-downs")  # mandatory
 # live" (Convention B).
 DEFAULT_DEAL_TARGET_GOAL = 1_000_000  # from the reference dashboard's "Deal Target Achieved" card
 IST = ZoneInfo("Asia/Kolkata")
+# references/visual-design-standards.md "Categorical color" - fixed order, never cycled.
+CATEGORICAL_PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
+# Above this many distinct breakout values, a field isn't well-formed
+# categorical data (e.g. a free-text "city" column) - don't pick an
+# arbitrary top 8 out of it at all. See assign_categorical_colors.
+CATEGORICAL_COLOR_CARDINALITY_CAP = 100
 
 
 def log_event(event_type, **fields):
@@ -104,6 +127,72 @@ def log_event(event_type, **fields):
     entry = {"timestamp": datetime.now(IST).strftime("%Y-%m-%dT%H:%M:%S+05:30"), "type": event_type, **fields}
     with open(LOG_PATH, "a") as f:
         f.write(json.dumps(entry) + "\n")
+
+
+def record_currency_in_glossary(account, currency_code):
+    """Write this run's confirmed currency back to
+    references/metric-glossary.md - per CLAUDE.md "Value formatting"'s
+    ask-once-per-account convention. This project's conversational flows
+    already write a confirmed currency back immediately (see
+    prompts/discovery.md section 4, prompts/chart-generation.md's currency
+    step); this script resolves the exact same per-account fact via
+    --currency/an interactive prompt but, before this, only ever recorded it
+    in logs/history.jsonl's default_dashboard_created entry - an audit-trail
+    fact, not the shared per-account memory a later Requirements Intake
+    session on the same account actually checks before re-asking. Idempotent
+    and conservative: creates a new `## Account <n>` section if none exists,
+    adds a Currency line to an existing section that doesn't have one yet,
+    and never silently overwrites an existing Currency line that names a
+    different value - it prints a warning instead, leaving reconciliation
+    (and this file's own dated `Superseded` convention) to a human. Heading
+    matches inside the file's own fenced-code-block *example* section (its
+    "## Account sections" walkthrough shows a literal "## Account 662" as a
+    template, not a real entry) are skipped - matching that example instead
+    of a real section would silently write into throwaway template text."""
+    text = GLOSSARY_PATH.read_text()
+    heading = f"## Account {account}"
+    date_str = datetime.now(IST).strftime("%Y-%m-%d")
+    currency_line = (
+        f"**Currency:** {currency_code} (confirmed via "
+        f"`scripts/create_default_dashboard.py --currency`, {date_str})."
+    )
+
+    code_spans = [m.span() for m in re.finditer(r"```.*?```", text, re.DOTALL)]
+
+    def find_real_heading():
+        pos = 0
+        while True:
+            idx = text.find(heading, pos)
+            if idx == -1:
+                return None
+            if not any(s <= idx < e for s, e in code_spans):
+                return idx
+            pos = idx + 1
+
+    start = find_real_heading()
+    if start is not None:
+        after_heading = start + len(heading)
+        next_heading = re.search(r"\n## ", text[after_heading:])
+        end = after_heading + (next_heading.start() if next_heading else len(text) - after_heading)
+        section = text[start:end]
+        if "**Currency:**" in section:
+            if f"**Currency:** {currency_code}" not in section:
+                print(f"  NOTE: references/metric-glossary.md already has a different Currency line "
+                      f"for Account {account} - not overwriting; reconcile by hand if {currency_code} "
+                      "genuinely supersedes it.")
+            return
+        new_section = section.rstrip("\n") + f"\n\n{currency_line}\n"
+        text = text[:start] + new_section + text[end:]
+    else:
+        marker = "\n## Unattributed"
+        new_section = f"\n{heading}\n\n{currency_line}\n"
+        if marker in text:
+            idx = text.index(marker)
+            text = text[:idx] + new_section + text[idx:]
+        else:
+            text = text.rstrip("\n") + "\n" + new_section
+
+    GLOSSARY_PATH.write_text(text)
 
 # Every Recruit CRM account's data lives in "Production Starrocks" (this is
 # the live, queryable copy). Some accounts also have an older, unreachable
@@ -345,6 +434,118 @@ def apply_currency_formatting(card, visualization_settings, currency_code):
         "currency": currency_code,
         "currency_style": "symbol",
     }
+    return visualization_settings
+
+
+def rank_values_by_metric(rows, dim_idx, metric_idx):
+    """Sum each breakout value's real metric total across every row it
+    appears in (a pie has one row per value; a 2-dimension cartesian series
+    can repeat across x-axis buckets) - this is what decides which values
+    are prominent enough on the actual rendered chart to be worth an
+    explicit color, not the values' names."""
+    totals = {}
+    for row in rows:
+        if not row or dim_idx >= len(row):
+            continue
+        value = row[dim_idx]
+        if value is None:
+            continue
+        metric = row[metric_idx] if metric_idx is not None and metric_idx < len(row) else None
+        totals[value] = totals.get(value, 0) + (metric if isinstance(metric, (int, float)) else 0)
+    return totals
+
+
+def assign_categorical_colors(value_totals):
+    """Pick the fixed 8-hue categorical palette for the values that actually
+    dominate the chart (by real summed metric total, ties broken
+    alphabetically for a deterministic result on reruns) - magnitude only
+    decides WHICH values earn an explicit color, never the color's own
+    intensity (see references/visual-design-standards.md's 'Never
+    color-rank a nominal category': that rule bans a magnitude-driven
+    lightness ramp on a nominal field; each chosen value still gets one
+    flat palette hue, same as any other categorical slot). The 9th value
+    and beyond are left uncolored (Metabase's own default) rather than
+    cycling the palette or inventing a slot the standard doesn't define -
+    Metabase's own pie.slice_threshold/legend already recede a long tail
+    visually, so this is consistent with, not a workaround for, that.
+    Above CATEGORICAL_COLOR_CARDINALITY_CAP distinct values, this isn't
+    coloring a bounded set of categories at all (a free-text field with
+    thousands of dirty values, e.g. an unstructured "city" column) - see
+    references/visual-design-standards.md's pie/all-pairs caps and CLAUDE.md's
+    "Data quality gate" - so nothing gets colored, not even a top-8 guess,
+    rather than implying those 8 particular values were deliberately chosen
+    as meaningful."""
+    if len(value_totals) > CATEGORICAL_COLOR_CARDINALITY_CAP:
+        return {}
+    ranked = sorted(value_totals.items(), key=lambda kv: (-kv[1], str(kv[0])))
+    return {str(v): CATEGORICAL_PALETTE[i] for i, (v, _) in enumerate(ranked) if i < len(CATEGORICAL_PALETTE)}
+
+
+def apply_series_colors(profile, card, query, visualization_settings):
+    """Color a pie's slices, or a multi-series bar/line/row/area chart's
+    series, using this account's real category values - run live via the
+    card's own already-validated query, never guessed or hardcoded (a
+    template can't know an account's actual Call Type/Deal Stage/source
+    values in advance). See references/visual-design-standards.md's
+    'Categorical color'. This treats every breakout value as nominal
+    (assign_categorical_colors' flat, never value-ranked slots); a
+    genuinely ordinal dimension (e.g. a hiring/deal pipeline stage, where
+    order carries meaning) would need this account's confirmed stage order
+    instead (CLAUDE.md's hiring-stage-order rule, never queried/invented) -
+    out of reach for this fully automated, no-per-account-questions flow,
+    so a pie/series breakout on a stage-like field still gets nominal
+    coloring here rather than the ordinal ramp a conversational
+    Requirements Intake build would use. A card that already carries its
+    own explicit color (pie.colors/pie.rows, or series_settings) is left
+    completely alone. Single-series cards (one dimension, one-or-more named
+    metrics) already carry their color directly in the template via a
+    metric-name-keyed series_settings entry and are left untouched too
+    (skipped by the len(dims) != 2 check)."""
+    display = card["display"]
+    if display == "pie":
+        if "pie.colors" in visualization_settings or "pie.rows" in visualization_settings:
+            return visualization_settings
+        result = mb_body(profile, "query", "--max-bytes", "0", body=query)
+        cols = [c["name"] for c in result.get("data", {}).get("cols", [])]
+        rows = result.get("data", {}).get("rows", [])
+        if len(cols) < 2:
+            return visualization_settings
+        dim_col = visualization_settings.get("pie.dimension") or cols[0]
+        if isinstance(dim_col, list):  # concentric rings - color only the innermost
+            dim_col = dim_col[0]
+        metric_col = visualization_settings.get("pie.metric") or cols[-1]
+        if dim_col not in cols or metric_col not in cols:
+            return visualization_settings
+        totals = rank_values_by_metric(rows, cols.index(dim_col), cols.index(metric_col))
+        colors = assign_categorical_colors(totals)
+        if not colors:
+            return visualization_settings
+        visualization_settings = copy.deepcopy(visualization_settings)
+        visualization_settings["pie.colors"] = colors
+        return visualization_settings
+
+    if display in ("bar", "line", "area", "row"):
+        dims = visualization_settings.get("graph.dimensions") or []
+        if len(dims) != 2 or "series_settings" in visualization_settings:
+            return visualization_settings
+        series_col = dims[1]
+        result = mb_body(profile, "query", "--max-bytes", "0", body=query)
+        cols = [c["name"] for c in result.get("data", {}).get("cols", [])]
+        rows = result.get("data", {}).get("rows", [])
+        if series_col not in cols:
+            return visualization_settings
+        metrics = visualization_settings.get("graph.metrics") or []
+        metric_col = metrics[0] if metrics else cols[-1]
+        if metric_col not in cols:
+            return visualization_settings
+        totals = rank_values_by_metric(rows, cols.index(series_col), cols.index(metric_col))
+        colors = assign_categorical_colors(totals)
+        if not colors:
+            return visualization_settings
+        visualization_settings = copy.deepcopy(visualization_settings)
+        visualization_settings["series_settings"] = {v: {"color": hexcode} for v, hexcode in colors.items()}
+        return visualization_settings
+
     return visualization_settings
 
 
@@ -634,6 +835,7 @@ def main():
 
         viz = apply_deal_goal(card, card["visualization_settings"], args.deal_target_goal)
         viz = apply_currency_formatting(card, viz, currency_code)
+        viz = apply_series_colors(profile, card, query, viz)
         body = {
             "name": card["name"],
             "display": card["display"],
@@ -879,6 +1081,7 @@ def main():
         profile=profile,
         currency=currency_code,
     )
+    record_currency_in_glossary(account, currency_code)
 
 
 if __name__ == "__main__":

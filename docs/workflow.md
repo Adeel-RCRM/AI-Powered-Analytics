@@ -28,6 +28,14 @@ reading it rather than for Claude executing it.
 
 ## Requirements Intake flow
 
+**If all you want is a companion Document for a dashboard that already
+exists** — no new charts, just "add a guide to the X dashboard" — Claude
+skips straight past the chart-building steps below (2-10): it confirms the
+account and the named dashboard, skips the Data Team WIP-vs-account-
+collection question entirely (nothing new is being created, so there's
+nothing for it to decide), and goes directly to step 11's documentation
+step for that dashboard.
+
 1. Claude asks: **"Which Recruit CRM account are these requirements for?
    Please provide the account number."**
 2. Claude asks — every time, not just once per account — whether this
@@ -144,8 +152,11 @@ CLAUDE.md's "Performance tracking" section for the full method.
 If at any point the account can't be found, the data is too thin/dirty for a
 given analysis, or Metabase can't be reached, Claude will say so directly
 rather than inventing results. Every flow appends an entry to the shared,
-git-committed `logs/history.jsonl` audit trail; for the Requirements Intake
-flow this is enforced by a Claude Code hook that flags the session if a
-card was created or a dashboard was created/updated but never logged. The
-Default Dashboard and Important Metrics Dashboard scripts log themselves in
-code instead.
+git-committed `logs/history.jsonl` audit trail. For the Requirements Intake
+flow, a teammate can optionally set up a local `.claude/settings.json` hook
+on their own machine that flags the session if a card was created or a
+dashboard was created/updated but never logged — it's git-ignored, a
+personal convenience this repo doesn't distribute or enforce centrally, so
+don't assume it's present in every session or on every clone. The Default
+Dashboard and Important Metrics Dashboard scripts log themselves in code
+instead.

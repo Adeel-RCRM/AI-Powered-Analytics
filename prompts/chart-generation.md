@@ -114,11 +114,18 @@ using only fields that were actually discovered — never assumed schema.
      turn as the answer, before creating the card** — so later charts in
      this session and future sessions don't re-ask. Don't defer this to a
      later cleanup step; it's the whole reason "ask once per account" works.
-   - **Show the value on every point/bar/segment by default** — see
-     CLAUDE.md "Data labels": `"graph.show_values": true` for bar/line/
-     area/row/combo/funnel, `"pie.percent_visibility": "inside"` or
-     `"both"` for pie. Tables, pivots, and scalar/smartscalar/progress KPIs
-     already show the value directly — nothing to add there.
+   - **Label density follows chart density** — see CLAUDE.md "Data labels":
+     a low-cardinality discrete comparison (funnel, a small-category bar/row
+     chart, a pie within its cap) shows every value (`"graph.show_values":
+     true` with Metabase's "All values" mode, or `"pie.percent_visibility":
+     "inside"`/`"both"` for pie); a high-cardinality continuous trend (a
+     line/area with many x-axis points) uses Metabase's "Some values" mode
+     instead and leans on the legend + native hover tooltip. Tables, pivots,
+     and scalar/smartscalar/progress KPIs already show the value directly —
+     nothing to add there. A smartscalar/trend KPI also needs its
+     comparison-direction setting checked against CLAUDE.md "KPI trend
+     color direction" before shipping — Metabase's default assumes a rise
+     is always good, which isn't true for every metric.
    - **A `table`-display card with a date/grain column gets the baseline
      table-formatting polish by default** — see CLAUDE.md "Table
      formatting": center-aligned columns, a cleaned-up "Date" column title
